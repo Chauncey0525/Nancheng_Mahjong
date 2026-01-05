@@ -1,0 +1,256 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #fff;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.game-info {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.info-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 1.1em;
+}
+
+.info-item span:last-child {
+    font-weight: bold;
+    color: #ffd700;
+    margin-left: 10px;
+}
+
+.game-area {
+    margin-bottom: 30px;
+}
+
+.community-cards {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.community-cards h2 {
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.cards-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-height: 120px;
+}
+
+.card {
+    width: 80px;
+    height: 112px;
+    background: #fff;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s;
+    cursor: pointer;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card.back {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 255, 255, 0.1) 10px,
+        rgba(255, 255, 255, 0.1) 20px
+    );
+}
+
+.card.red {
+    color: #d32f2f;
+}
+
+.card.black {
+    color: #212121;
+}
+
+.card-rank {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.card-suit {
+    font-size: 1.5em;
+    text-align: center;
+}
+
+.player-area, .opponent-area {
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+}
+
+.player-info, .opponent-info {
+    text-align: center;
+}
+
+.player-info h3, .opponent-info h3 {
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+.player-hand-info, .opponent-hand-info {
+    margin-top: 15px;
+    font-size: 1.1em;
+    color: #ffd700;
+    font-weight: bold;
+}
+
+.action-area {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+.bet-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.bet-controls label {
+    font-size: 1.1em;
+}
+
+.bet-controls input {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    width: 100px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-bet {
+    background: #4caf50;
+    color: white;
+}
+
+.btn-check {
+    background: #2196f3;
+    color: white;
+}
+
+.btn-fold {
+    background: #f44336;
+    color: white;
+}
+
+.btn-allin {
+    background: #ff9800;
+    color: white;
+}
+
+.btn-new {
+    background: #9c27b0;
+    color: white;
+}
+
+.game-controls {
+    text-align: center;
+}
+
+.message-area {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 1.1em;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.message-area.win {
+    background: rgba(76, 175, 80, 0.5);
+}
+
+.message-area.lose {
+    background: rgba(244, 67, 54, 0.5);
+}
+
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2em;
+    }
+    
+    .card {
+        width: 60px;
+        height: 84px;
+    }
+    
+    .bet-controls {
+        flex-direction: column;
+    }
+    
+    .bet-controls input {
+        width: 100%;
+    }
+}
