@@ -273,14 +273,15 @@ function getAllEmperors() {
                 e.intro,
                 e.bio,
                 e.total_score as total,
-                GROUP_CONCAT(DISTINCT a.alias, '|') as aliases,
-                GROUP_CONCAT(s.metric || ':' || s.score, '|') as scores
+                GROUP_CONCAT(DISTINCT a.alias) as aliases,
+                GROUP_CONCAT(DISTINCT s.metric || ':' || s.score) as scores
             FROM emperors e
             LEFT JOIN aliases a ON e.id = a.emperor_id
             LEFT JOIN scores s ON e.id = s.emperor_id
             GROUP BY e.id
             ORDER BY e.total_score DESC
         `, [], (err, rows) => {
+            db.close(); // 确保关闭数据库连接
             if (err) {
                 reject(err);
             } else {
@@ -288,16 +289,18 @@ function getAllEmperors() {
                 const emperors = rows.map(row => {
                     const scores = {};
                     if (row.scores) {
-                        row.scores.split('|').forEach(item => {
+                        row.scores.split(',').forEach(item => {
                             const [metric, score] = item.split(':');
-                            scores[metric] = parseFloat(score);
+                            if (metric && score) {
+                                scores[metric] = parseFloat(score);
+                            }
                         });
                     }
                     
                     return {
                         id: row.id,
                         name: row.name,
-                        aliases: row.aliases ? row.aliases.split('|') : [],
+                        aliases: row.aliases ? row.aliases.split(',') : [],
                         scores: scores,
                         intro: row.intro,
                         bio: row.bio,
@@ -307,7 +310,6 @@ function getAllEmperors() {
                 
                 resolve(emperors);
             }
-            db.close();
         });
     });
 }
@@ -325,8 +327,8 @@ function searchEmperor(query) {
                 e.intro,
                 e.bio,
                 e.total_score as total,
-                GROUP_CONCAT(DISTINCT a.alias, '|') as aliases,
-                GROUP_CONCAT(s.metric || ':' || s.score, '|') as scores
+                GROUP_CONCAT(DISTINCT a.alias) as aliases,
+                GROUP_CONCAT(DISTINCT s.metric || ':' || s.score) as scores
             FROM emperors e
             LEFT JOIN aliases a ON e.id = a.emperor_id
             LEFT JOIN scores s ON e.id = s.emperor_id
@@ -340,16 +342,18 @@ function searchEmperor(query) {
                 const emperors = rows.map(row => {
                     const scores = {};
                     if (row.scores) {
-                        row.scores.split('|').forEach(item => {
+                        row.scores.split(',').forEach(item => {
                             const [metric, score] = item.split(':');
-                            scores[metric] = parseFloat(score);
+                            if (metric && score) {
+                                scores[metric] = parseFloat(score);
+                            }
                         });
                     }
                     
                     return {
                         id: row.id,
                         name: row.name,
-                        aliases: row.aliases ? row.aliases.split('|') : [],
+                        aliases: row.aliases ? row.aliases.split(',') : [],
                         scores: scores,
                         intro: row.intro,
                         bio: row.bio,
