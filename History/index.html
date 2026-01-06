@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>古代皇帝评分排名系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏛️ 古代皇帝评分排名系统</h1>
+            <p class="subtitle">基于多维度指标的综合评价体系</p>
+        </header>
+
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" id="emperorSearch" placeholder="请输入皇帝姓名、庙号、年号或谥号（如：李世民、唐太宗、康熙、清圣祖）" autocomplete="off">
+                <button id="searchBtn">搜索</button>
+            </div>
+            <div id="searchSuggestions" class="suggestions"></div>
+        </div>
+
+        <div id="emperorDetails" class="emperor-details hidden">
+            <div class="details-header">
+                <h2 id="emperorName"></h2>
+                <div class="rank-badge">
+                    <span>排名：</span><span id="emperorRank"></span>
+                </div>
+                <div class="total-score">
+                    <span>总分：</span><span id="emperorTotal"></span>
+                </div>
+            </div>
+
+            <div class="details-content">
+                <div class="scores-section">
+                    <h3>评分详情</h3>
+                    <div id="scoresGrid" class="scores-grid"></div>
+                </div>
+
+                <div class="info-section">
+                    <div class="intro-box">
+                        <h3>简介</h3>
+                        <p id="emperorIntro"></p>
+                    </div>
+                    <div class="bio-box">
+                        <h3>生平事迹</h3>
+                        <p id="emperorBio"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ranking-section">
+            <h2>🏆 皇帝排行榜</h2>
+
+            <h3 id="rankingTitle">TOP 10</h3>
+            <div id="topRankingList" class="ranking-list"></div>
+
+            <div class="pagination-controls">
+                <button id="firstPageBtn">首页</button>
+                <button id="prevPageBtn">上一页</button>
+                <span id="pageInfo"></span>
+                <button id="nextPageBtn">下一页</button>
+                <button id="lastPageBtn">末页</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="data-api.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
