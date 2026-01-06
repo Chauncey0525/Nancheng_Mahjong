@@ -1,18 +1,18 @@
 // 游戏状态
 const gameState = {
     deck: [],
-    playerCards: [],
-    opponentCards: [],
+    players: [], // 玩家数组，第一个是真人玩家
     communityCards: [],
     pot: 0,
-    playerChips: 1000,
-    opponentChips: 1000,
     currentBet: 0,
-    playerBet: 0,
-    opponentBet: 0,
     gamePhase: 'preflop', // preflop, flop, turn, river, showdown
-    playerAction: null,
-    opponentAction: null
+    currentPlayerIndex: 0, // 当前行动的玩家索引
+    dealerIndex: 0, // 庄家位置
+    smallBlindIndex: 0, // 小盲注位置
+    bigBlindIndex: 0, // 大盲注位置
+    gameMode: 'single', // single 或 multi
+    activePlayers: [], // 仍在游戏中的玩家索引
+    bettingRoundComplete: false
 };
 
 // 卡牌花色和点数
@@ -49,76 +49,176 @@ function getCardValue(rank) {
     return parseInt(rank);
 }
 
+// 初始化玩家
+function createPlayer(id, name, isHuman = false) {
+    return {
+        id: id,
+        name: name,
+        isHuman: isHuman,
+        cards: [],
+        chips: 1000,
+        currentBet: 0,
+        action: null, // bet, call, check, fold, allin
+        folded: false,
+        allIn: false
+    };
+}
+
 // 初始化游戏
-function initGame() {
+function initGame(playerCount = 2) {
     gameState.deck = createDeck();
-    gameState.playerCards = [];
-    gameState.opponentCards = [];
+    gameState.players = [];
     gameState.communityCards = [];
     gameState.pot = 0;
     gameState.currentBet = 0;
-    gameState.playerBet = 0;
-    gameState.opponentBet = 0;
     gameState.gamePhase = 'preflop';
-    gameState.playerAction = null;
-    gameState.opponentAction = null;
-
+    gameState.activePlayers = [];
+    
+    // 创建玩家
+    gameState.players.push(createPlayer(0, '你', true));
+    for (let i = 1; i < playerCount; i++) {
+        gameState.players.push(createPlayer(i, `电脑${i}`, false));
+    }
+    
+    // 初始化所有玩家
+    gameState.players.forEach(player => {
+        player.cards = [];
+        player.currentBet = 0;
+        player.action = null;
+        player.folded = false;
+        player.allIn = false;
+        gameState.activePlayers.push(player.id);
+    });
+    
+    // 设置庄家位置（随机）
+    gameState.dealerIndex = Math.floor(Math.random() * gameState.players.length);
+    gameState.smallBlindIndex = (gameState.dealerIndex + 1) % gameState.players.length;
+    gameState.bigBlindIndex = (gameState.dealerIndex + 2) % gameState.players.length;
+    
     // 发牌
-    gameState.playerCards = [gameState.deck.pop(), gameState.deck.pop()];
-    gameState.opponentCards = [gameState.deck.pop(), gameState.deck.pop()];
-
-    // 小盲注和大盲注
+    for (let i = 0; i < 2; i++) {
+        for (let player of gameState.players) {
+            player.cards.push(gameState.deck.pop());
+        }
+    }
+    
+    // 设置盲注
     const smallBlind = 10;
     const bigBlind = 20;
-    gameState.playerBet = bigBlind;
-    gameState.opponentBet = smallBlind;
+    
+    const smallBlindPlayer = gameState.players[gameState.smallBlindIndex];
+    const bigBlindPlayer = gameState.players[gameState.bigBlindIndex];
+    
+    smallBlindPlayer.chips -= smallBlind;
+    smallBlindPlayer.currentBet = smallBlind;
+    bigBlindPlayer.chips -= bigBlind;
+    bigBlindPlayer.currentBet = bigBlind;
+    
     gameState.pot = smallBlind + bigBlind;
     gameState.currentBet = bigBlind;
-    gameState.playerChips -= bigBlind;
-    gameState.opponentChips -= smallBlind;
-
+    
+    // 当前行动玩家是大盲注的下一位
+    gameState.currentPlayerIndex = (gameState.bigBlindIndex + 1) % gameState.players.length;
+    
     updateUI();
-    showMessage('游戏开始！你是大盲注，请选择操作。');
-    enableActions();
+    
+    // 如果当前玩家是真人，启用操作；否则AI行动
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (currentPlayer.isHuman) {
+        showMessage(`游戏开始！你是大盲注，请选择操作。`);
+        enableActions();
+    } else {
+        showMessage(`游戏开始！${currentPlayer.name}行动中...`);
+        setTimeout(() => {
+            processAITurn();
+        }, 1000);
+    }
 }
 
 // 更新UI
 function updateUI() {
     // 更新筹码和底池
+    const humanPlayer = gameState.players[0];
     document.getElementById('pot').textContent = gameState.pot;
     document.getElementById('current-bet').textContent = gameState.currentBet;
-    document.getElementById('player-chips').textContent = gameState.playerChips;
-
-    // 显示玩家手牌
-    const playerCardsDiv = document.getElementById('player-cards');
-    playerCardsDiv.innerHTML = '';
-    gameState.playerCards.forEach(card => {
-        playerCardsDiv.appendChild(createCardElement(card));
-    });
-
-    // 显示电脑手牌（背面）
-    const opponentCardsDiv = document.getElementById('opponent-cards');
-    opponentCardsDiv.innerHTML = '';
-    gameState.opponentCards.forEach(() => {
-        const cardBack = document.createElement('div');
-        cardBack.className = 'card back';
-        opponentCardsDiv.appendChild(cardBack);
-    });
-
+    document.getElementById('player-chips').textContent = humanPlayer.chips;
+    
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    document.getElementById('current-player').textContent = currentPlayer.name;
+    
     // 显示公共牌
     const communityCardsDiv = document.getElementById('community-cards');
     communityCardsDiv.innerHTML = '';
     gameState.communityCards.forEach(card => {
         communityCardsDiv.appendChild(createCardElement(card));
     });
-
-    // 显示手牌类型
-    if (gameState.communityCards.length > 0) {
-        const playerHand = evaluateHand([...gameState.playerCards, ...gameState.communityCards]);
-        document.getElementById('player-hand-type').textContent = playerHand.name;
-    } else {
-        document.getElementById('player-hand-type').textContent = '';
-    }
+    
+    // 更新玩家显示
+    const playersContainer = document.getElementById('players-container');
+    playersContainer.innerHTML = '';
+    
+    gameState.players.forEach((player, index) => {
+        const playerDiv = document.createElement('div');
+        playerDiv.className = 'player-info';
+        playerDiv.id = `player-${index}`;
+        
+        if (index === gameState.currentPlayerIndex && !player.folded) {
+            playerDiv.classList.add('active');
+        }
+        if (player.folded) {
+            playerDiv.classList.add('folded');
+        }
+        
+        const nameDiv = document.createElement('h3');
+        nameDiv.textContent = player.name;
+        if (index === gameState.dealerIndex) {
+            nameDiv.textContent += ' (庄)';
+        }
+        if (index === gameState.smallBlindIndex) {
+            nameDiv.textContent += ' (小盲)';
+        }
+        if (index === gameState.bigBlindIndex) {
+            nameDiv.textContent += ' (大盲)';
+        }
+        
+        const cardsDiv = document.createElement('div');
+        cardsDiv.className = 'cards-container';
+        
+        if (player.isHuman || gameState.gamePhase === 'showdown') {
+            player.cards.forEach(card => {
+                cardsDiv.appendChild(createCardElement(card));
+            });
+        } else {
+            player.cards.forEach(() => {
+                const cardBack = document.createElement('div');
+                cardBack.className = 'card back';
+                cardsDiv.appendChild(cardBack);
+            });
+        }
+        
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'player-stats';
+        infoDiv.innerHTML = `
+            <div>筹码: ${player.chips}</div>
+            <div>下注: ${player.currentBet}</div>
+            ${player.folded ? '<div class="folded-badge">已弃牌</div>' : ''}
+            ${player.allIn ? '<div class="allin-badge">全押</div>' : ''}
+        `;
+        
+        const handTypeDiv = document.createElement('div');
+        handTypeDiv.className = 'player-hand-info';
+        if (gameState.communityCards.length > 0 && !player.folded) {
+            const hand = evaluateHand([...player.cards, ...gameState.communityCards]);
+            handTypeDiv.textContent = hand.name;
+        }
+        
+        playerDiv.appendChild(nameDiv);
+        playerDiv.appendChild(cardsDiv);
+        playerDiv.appendChild(infoDiv);
+        playerDiv.appendChild(handTypeDiv);
+        
+        playersContainer.appendChild(playerDiv);
+    });
 }
 
 // 创建卡牌元素
@@ -143,175 +243,259 @@ function createCardElement(card) {
 
 // 下注
 function bet(amount) {
-    if (amount > gameState.playerChips) {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    
+    if (amount > player.chips) {
         showMessage('筹码不足！');
         return;
     }
     
-    if (amount < gameState.currentBet - gameState.playerBet) {
-        showMessage(`下注金额至少需要 ${gameState.currentBet - gameState.playerBet}`);
+    if (amount < gameState.currentBet - player.currentBet) {
+        showMessage(`下注金额至少需要 ${gameState.currentBet - player.currentBet}`);
         return;
     }
 
     const totalBet = amount;
-    const additionalBet = totalBet - gameState.playerBet;
+    const additionalBet = totalBet - player.currentBet;
     
-    gameState.playerChips -= additionalBet;
-    gameState.playerBet = totalBet;
+    player.chips -= additionalBet;
+    player.currentBet = totalBet;
     gameState.pot += additionalBet;
     
     if (totalBet > gameState.currentBet) {
         gameState.currentBet = totalBet;
     }
     
-    gameState.playerAction = 'bet';
+    if (player.chips === 0) {
+        player.allIn = true;
+        player.action = 'allin';
+    } else {
+        player.action = 'bet';
+    }
+    
     updateUI();
     disableActions();
     
     setTimeout(() => {
-        opponentAction();
+        nextPlayer();
     }, 1000);
 }
 
 // 过牌
 function check() {
-    if (gameState.playerBet < gameState.currentBet) {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    
+    if (player.currentBet < gameState.currentBet) {
         showMessage('你不能过牌，需要跟注或加注！');
         return;
     }
     
-    gameState.playerAction = 'check';
+    player.action = 'check';
     disableActions();
     
     setTimeout(() => {
-        opponentAction();
+        nextPlayer();
     }, 1000);
 }
 
 // 弃牌
 function fold() {
-    gameState.playerAction = 'fold';
-    showMessage('你弃牌了，电脑获胜！', 'lose');
+    const player = gameState.players[gameState.currentPlayerIndex];
+    player.action = 'fold';
+    player.folded = true;
+    gameState.activePlayers = gameState.activePlayers.filter(id => id !== player.id);
+    
+    updateUI();
     disableActions();
+    
     setTimeout(() => {
-        initGame();
-    }, 3000);
+        nextPlayer();
+    }, 1000);
 }
 
 // 全押
 function allIn() {
-    bet(gameState.playerChips);
+    const player = gameState.players[gameState.currentPlayerIndex];
+    bet(player.chips);
 }
 
-// 电脑行动
-function opponentAction() {
-    if (gameState.playerAction === 'fold') return;
-    
-    const allCards = [...gameState.opponentCards, ...gameState.communityCards];
-    const handStrength = evaluateHandStrength(allCards);
-    const randomFactor = Math.random();
-    
-    let action;
-    
-    if (gameState.playerAction === 'fold') {
-        // 玩家已弃牌，电脑自动获胜
+// 下一个玩家
+function nextPlayer() {
+    // 检查是否只剩一个玩家
+    if (gameState.activePlayers.length <= 1) {
+        endGame();
         return;
     }
     
-    // 简单的AI逻辑
+    // 移动到下一个活跃玩家
+    do {
+        gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+    } while (gameState.players[gameState.currentPlayerIndex].folded || 
+             !gameState.activePlayers.includes(gameState.players[gameState.currentPlayerIndex].id));
+    
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    
+    // 检查是否完成一轮下注
+    if (isBettingRoundComplete()) {
+        nextPhase();
+        return;
+    }
+    
+    updateUI();
+    
+    // 如果是真人玩家，启用操作；否则AI行动
+    if (currentPlayer.isHuman && !currentPlayer.folded) {
+        enableActions();
+    } else if (!currentPlayer.folded) {
+        setTimeout(() => {
+            processAITurn();
+        }, 1000);
+    }
+}
+
+// 检查是否完成一轮下注
+function isBettingRoundComplete() {
+    const activePlayers = gameState.players.filter(p => !p.folded && gameState.activePlayers.includes(p.id));
+    
+    if (activePlayers.length <= 1) {
+        return false; // 只剩一个玩家，不需要继续下注
+    }
+    
+    // 所有活跃玩家的下注必须相等
+    const bets = activePlayers.map(p => p.currentBet);
+    if (bets.length === 0) return false;
+    const allBetsEqual = bets.every(bet => bet === bets[0]);
+    
+    // 检查是否所有玩家都已行动
+    // 在翻牌前，大盲注如果没有被加注，可以过牌
+    // 在其他阶段，所有玩家都必须行动
+    let allActed = true;
+    for (let player of activePlayers) {
+        if (gameState.gamePhase === 'preflop' && 
+            player.id === gameState.players[gameState.bigBlindIndex].id) {
+            // 大盲注在翻牌前，如果当前下注等于他的下注，他可以选择过牌或加注
+            if (gameState.currentBet === player.currentBet && player.action === null) {
+                // 如果当前玩家就是大盲注，且还没有行动，不算完成
+                if (gameState.currentPlayerIndex === player.id) {
+                    allActed = false;
+                    break;
+                }
+            } else if (player.action === null) {
+                allActed = false;
+                break;
+            }
+        } else if (player.action === null) {
+            allActed = false;
+            break;
+        }
+    }
+    
+    // 还需要检查是否回到了最后一个加注的玩家
+    // 如果所有下注相等且所有玩家都已行动，则完成
+    return allBetsEqual && allActed;
+}
+
+// AI行动
+function processAITurn() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    
+    if (player.folded || player.allIn) {
+        nextPlayer();
+        return;
+    }
+    
+    const allCards = [...player.cards, ...gameState.communityCards];
+    const handStrength = evaluateHandStrength(allCards);
+    const randomFactor = Math.random();
+    
+    const callAmount = gameState.currentBet - player.currentBet;
+    const canCheck = callAmount === 0;
+    
+    // AI决策逻辑
     if (handStrength > 0.7 || randomFactor > 0.8) {
-        // 手牌很强或随机因素，加注或全押
+        // 手牌很强，加注
         const raiseAmount = Math.min(
             gameState.currentBet + Math.floor(Math.random() * 100) + 50,
-            gameState.opponentChips
+            player.chips
         );
-        if (raiseAmount > gameState.currentBet) {
-            const additionalBet = raiseAmount - gameState.opponentBet;
-            if (additionalBet <= gameState.opponentChips) {
-                gameState.opponentChips -= additionalBet;
-                gameState.opponentBet = raiseAmount;
-                gameState.pot += additionalBet;
-                gameState.currentBet = raiseAmount;
-                gameState.opponentAction = 'raise';
-                showMessage(`电脑加注到 ${raiseAmount}`);
+        if (raiseAmount > gameState.currentBet && raiseAmount <= player.chips) {
+            const additionalBet = raiseAmount - player.currentBet;
+            player.chips -= additionalBet;
+            player.currentBet = raiseAmount;
+            gameState.pot += additionalBet;
+            gameState.currentBet = raiseAmount;
+            if (player.chips === 0) {
+                player.allIn = true;
+                player.action = 'allin';
             } else {
-                // 跟注
-                const callAmount = gameState.currentBet - gameState.opponentBet;
-                gameState.opponentChips -= callAmount;
-                gameState.opponentBet = gameState.currentBet;
-                gameState.pot += callAmount;
-                gameState.opponentAction = 'call';
-                showMessage('电脑跟注');
+                player.action = 'raise';
             }
+            showMessage(`${player.name} 加注到 ${raiseAmount}`);
+        } else if (canCheck) {
+            player.action = 'check';
+            showMessage(`${player.name} 过牌`);
         } else {
             // 跟注
-            const callAmount = gameState.currentBet - gameState.opponentBet;
-            gameState.opponentChips -= callAmount;
-            gameState.opponentBet = gameState.currentBet;
+            player.chips -= callAmount;
+            player.currentBet = gameState.currentBet;
             gameState.pot += callAmount;
-            gameState.opponentAction = 'call';
-            showMessage('电脑跟注');
+            player.action = 'call';
+            showMessage(`${player.name} 跟注 ${callAmount}`);
         }
     } else if (handStrength > 0.4 || randomFactor > 0.5) {
         // 手牌一般，跟注或过牌
-        if (gameState.currentBet > gameState.opponentBet) {
-            const callAmount = gameState.currentBet - gameState.opponentBet;
-            if (callAmount <= gameState.opponentChips) {
-                gameState.opponentChips -= callAmount;
-                gameState.opponentBet = gameState.currentBet;
-                gameState.pot += callAmount;
-                gameState.opponentAction = 'call';
-                showMessage('电脑跟注');
-            } else {
-                gameState.opponentAction = 'fold';
-                showMessage('电脑弃牌，你获胜！', 'win');
-                gameState.playerChips += gameState.pot;
-                disableActions();
-                setTimeout(() => {
-                    initGame();
-                }, 3000);
-                return;
-            }
+        if (canCheck) {
+            player.action = 'check';
+            showMessage(`${player.name} 过牌`);
+        } else if (callAmount <= player.chips && callAmount <= player.chips * 0.3) {
+            player.chips -= callAmount;
+            player.currentBet = gameState.currentBet;
+            gameState.pot += callAmount;
+            player.action = 'call';
+            showMessage(`${player.name} 跟注 ${callAmount}`);
         } else {
-            gameState.opponentAction = 'check';
-            showMessage('电脑过牌');
+            player.action = 'fold';
+            player.folded = true;
+            gameState.activePlayers = gameState.activePlayers.filter(id => id !== player.id);
+            showMessage(`${player.name} 弃牌`);
         }
     } else {
-        // 手牌很弱，弃牌
-        if (gameState.currentBet - gameState.opponentBet > gameState.opponentChips * 0.3) {
-            gameState.opponentAction = 'fold';
-            showMessage('电脑弃牌，你获胜！', 'win');
-            gameState.playerChips += gameState.pot;
-            disableActions();
-            setTimeout(() => {
-                initGame();
-            }, 3000);
-            return;
+        // 手牌很弱
+        if (canCheck) {
+            player.action = 'check';
+            showMessage(`${player.name} 过牌`);
+        } else if (callAmount > player.chips * 0.3) {
+            player.action = 'fold';
+            player.folded = true;
+            gameState.activePlayers = gameState.activePlayers.filter(id => id !== player.id);
+            showMessage(`${player.name} 弃牌`);
         } else {
-            const callAmount = gameState.currentBet - gameState.opponentBet;
-            gameState.opponentChips -= callAmount;
-            gameState.opponentBet = gameState.currentBet;
+            player.chips -= callAmount;
+            player.currentBet = gameState.currentBet;
             gameState.pot += callAmount;
-            gameState.opponentAction = 'call';
-            showMessage('电脑跟注');
+            player.action = 'call';
+            showMessage(`${player.name} 跟注 ${callAmount}`);
         }
     }
     
     updateUI();
     
-    // 检查是否进入下一阶段
-    if (gameState.playerBet === gameState.opponentBet && 
-        (gameState.playerAction === 'check' || gameState.playerAction === 'call' || gameState.playerAction === 'bet') &&
-        (gameState.opponentAction === 'check' || gameState.opponentAction === 'call' || gameState.opponentAction === 'raise')) {
-        nextPhase();
-    } else {
-        // 需要玩家行动
-        enableActions();
-    }
+    setTimeout(() => {
+        nextPlayer();
+    }, 1500);
 }
 
 // 进入下一阶段
 function nextPhase() {
+    // 重置所有玩家的行动和下注
+    gameState.players.forEach(player => {
+        if (!player.folded) {
+            player.action = null;
+            player.currentBet = 0;
+        }
+    });
+    gameState.currentBet = 0;
+    
     if (gameState.gamePhase === 'preflop') {
         gameState.gamePhase = 'flop';
         gameState.communityCards = [
@@ -319,44 +503,38 @@ function nextPhase() {
             gameState.deck.pop(),
             gameState.deck.pop()
         ];
-        gameState.playerBet = 0;
-        gameState.opponentBet = 0;
-        gameState.currentBet = 0;
-        gameState.playerAction = null;
-        gameState.opponentAction = null;
+        gameState.currentPlayerIndex = (gameState.smallBlindIndex) % gameState.players.length;
         showMessage('翻牌圈！');
     } else if (gameState.gamePhase === 'flop') {
         gameState.gamePhase = 'turn';
         gameState.communityCards.push(gameState.deck.pop());
-        gameState.playerBet = 0;
-        gameState.opponentBet = 0;
-        gameState.currentBet = 0;
-        gameState.playerAction = null;
-        gameState.opponentAction = null;
+        gameState.currentPlayerIndex = (gameState.smallBlindIndex) % gameState.players.length;
         showMessage('转牌圈！');
     } else if (gameState.gamePhase === 'turn') {
         gameState.gamePhase = 'river';
         gameState.communityCards.push(gameState.deck.pop());
-        gameState.playerBet = 0;
-        gameState.opponentBet = 0;
-        gameState.currentBet = 0;
-        gameState.playerAction = null;
-        gameState.opponentAction = null;
+        gameState.currentPlayerIndex = (gameState.smallBlindIndex) % gameState.players.length;
         showMessage('河牌圈！');
     } else if (gameState.gamePhase === 'river') {
         showdown();
         return;
     }
     
+    // 移动到第一个活跃玩家
+    while (gameState.players[gameState.currentPlayerIndex].folded || 
+           !gameState.activePlayers.includes(gameState.players[gameState.currentPlayerIndex].id)) {
+        gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+    }
+    
     updateUI();
     
-    // 电脑先行动（如果玩家是大盲注）
-    if (gameState.gamePhase === 'flop' || gameState.gamePhase === 'turn' || gameState.gamePhase === 'river') {
-        setTimeout(() => {
-            opponentAction();
-        }, 1000);
-    } else {
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (currentPlayer.isHuman) {
         enableActions();
+    } else {
+        setTimeout(() => {
+            processAITurn();
+        }, 1000);
     }
 }
 
@@ -364,44 +542,73 @@ function nextPhase() {
 function showdown() {
     gameState.gamePhase = 'showdown';
     
-    // 显示电脑手牌
-    const opponentCardsDiv = document.getElementById('opponent-cards');
-    opponentCardsDiv.innerHTML = '';
-    gameState.opponentCards.forEach(card => {
-        opponentCardsDiv.appendChild(createCardElement(card));
-    });
+    const activePlayers = gameState.players.filter(p => !p.folded && gameState.activePlayers.includes(p.id));
     
-    const playerHand = evaluateHand([...gameState.playerCards, ...gameState.communityCards]);
-    const opponentHand = evaluateHand([...gameState.opponentCards, ...gameState.communityCards]);
-    
-    document.getElementById('player-hand-type').textContent = playerHand.name;
-    document.getElementById('opponent-hand-type').textContent = opponentHand.name;
-    
-    const result = compareHands(playerHand, opponentHand);
-    
-    if (result > 0) {
-        showMessage(`你获胜！${playerHand.name} 击败 ${opponentHand.name}`, 'win');
-        gameState.playerChips += gameState.pot;
-    } else if (result < 0) {
-        showMessage(`电脑获胜！${opponentHand.name} 击败 ${playerHand.name}`, 'lose');
-        gameState.opponentChips += gameState.pot;
+    if (activePlayers.length === 1) {
+        // 只剩一个玩家，直接获胜
+        const winner = activePlayers[0];
+        winner.chips += gameState.pot;
+        showMessage(`${winner.name} 获胜！获得 ${gameState.pot} 筹码`, 'win');
     } else {
-        showMessage(`平局！双方都是 ${playerHand.name}`);
-        gameState.playerChips += Math.floor(gameState.pot / 2);
-        gameState.opponentChips += Math.floor(gameState.pot / 2);
+        // 比较所有玩家的手牌
+        const hands = activePlayers.map(player => ({
+            player: player,
+            hand: evaluateHand([...player.cards, ...gameState.communityCards])
+        }));
+        
+        // 排序找出最佳手牌
+        hands.sort((a, b) => {
+            if (a.hand.rank !== b.hand.rank) {
+                return b.hand.rank - a.hand.rank;
+            }
+            return b.hand.highCard - a.hand.highCard;
+        });
+        
+        const bestHand = hands[0];
+        const winners = hands.filter(h => 
+            h.hand.rank === bestHand.hand.rank && h.hand.highCard === bestHand.hand.highCard
+        );
+        
+        const potPerWinner = Math.floor(gameState.pot / winners.length);
+        winners.forEach(winner => {
+            winner.player.chips += potPerWinner;
+        });
+        
+        if (winners.length === 1) {
+            showMessage(`${winners[0].player.name} 获胜！${winners[0].hand.name} 获得 ${potPerWinner} 筹码`, 
+                       winners[0].player.isHuman ? 'win' : 'lose');
+        } else {
+            const winnerNames = winners.map(w => w.player.name).join('、');
+            showMessage(`平局！${winnerNames} 都是 ${bestHand.hand.name}，各获得 ${potPerWinner} 筹码`);
+        }
     }
     
     updateUI();
     disableActions();
     
     setTimeout(() => {
-        initGame();
+        initGame(gameState.players.length);
     }, 5000);
+}
+
+// 结束游戏（只剩一个玩家）
+function endGame() {
+    const winner = gameState.players.find(p => !p.folded && gameState.activePlayers.includes(p.id));
+    if (winner) {
+        winner.chips += gameState.pot;
+        showMessage(`${winner.name} 获胜！其他玩家都弃牌了`, winner.isHuman ? 'win' : 'lose');
+        updateUI();
+        disableActions();
+        
+        setTimeout(() => {
+            initGame(gameState.players.length);
+        }, 3000);
+    }
 }
 
 // 评估手牌强度（0-1之间的值）
 function evaluateHandStrength(cards) {
-    if (cards.length < 5) return 0.3; // 只有手牌，无法准确评估
+    if (cards.length < 5) return 0.3;
     
     const hand = evaluateHand(cards);
     const strengthMap = {
@@ -516,14 +723,6 @@ function checkStraight(ranks) {
     return false;
 }
 
-// 比较两手牌
-function compareHands(hand1, hand2) {
-    if (hand1.rank !== hand2.rank) {
-        return hand1.rank - hand2.rank;
-    }
-    return hand1.highCard - hand2.highCard;
-}
-
 // 显示消息
 function showMessage(message, type = '') {
     const messageArea = document.getElementById('message-area');
@@ -533,15 +732,18 @@ function showMessage(message, type = '') {
 
 // 启用操作按钮
 function enableActions() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const callAmount = gameState.currentBet - player.currentBet;
+    
     document.getElementById('bet-btn').disabled = false;
-    document.getElementById('check-btn').disabled = false;
+    document.getElementById('check-btn').disabled = callAmount > 0;
     document.getElementById('fold-btn').disabled = false;
     document.getElementById('all-in-btn').disabled = false;
     
     const betAmount = document.getElementById('bet-amount');
-    const minBet = gameState.currentBet - gameState.playerBet;
-    betAmount.min = minBet;
-    betAmount.value = minBet;
+    betAmount.min = Math.max(callAmount, 0);
+    betAmount.value = callAmount;
+    betAmount.max = player.chips;
 }
 
 // 禁用操作按钮
@@ -552,10 +754,45 @@ function disableActions() {
     document.getElementById('all-in-btn').disabled = true;
 }
 
+// 游戏模式选择
+document.querySelectorAll('.btn-mode').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+        gameState.gameMode = mode;
+        
+        if (mode === 'single') {
+            document.getElementById('mode-selection').style.display = 'none';
+            document.getElementById('game-info').style.display = 'flex';
+            document.getElementById('game-area').style.display = 'block';
+            document.getElementById('action-area').style.display = 'block';
+            initGame(2);
+        } else {
+            document.getElementById('player-count-selection').style.display = 'block';
+        }
+    });
+});
+
+document.getElementById('start-game-btn').addEventListener('click', () => {
+    const playerCount = parseInt(document.getElementById('player-count').value);
+    if (playerCount < 2 || playerCount > 6) {
+        showMessage('玩家数量必须在2-6人之间！');
+        return;
+    }
+    
+    document.getElementById('mode-selection').style.display = 'none';
+    document.getElementById('game-info').style.display = 'flex';
+    document.getElementById('game-area').style.display = 'block';
+    document.getElementById('action-area').style.display = 'block';
+    initGame(playerCount);
+});
+
 // 事件监听
 document.getElementById('bet-btn').addEventListener('click', () => {
     const amount = parseInt(document.getElementById('bet-amount').value);
-    if (amount >= gameState.currentBet - gameState.playerBet) {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const callAmount = gameState.currentBet - player.currentBet;
+    
+    if (amount >= callAmount) {
         bet(amount);
     } else {
         showMessage('下注金额不足！');
@@ -565,7 +802,8 @@ document.getElementById('bet-btn').addEventListener('click', () => {
 document.getElementById('check-btn').addEventListener('click', check);
 document.getElementById('fold-btn').addEventListener('click', fold);
 document.getElementById('all-in-btn').addEventListener('click', allIn);
-document.getElementById('new-game-btn').addEventListener('click', initGame);
-
-// 初始化游戏
-initGame();
+document.getElementById('new-game-btn').addEventListener('click', () => {
+    if (gameState.players.length > 0) {
+        initGame(gameState.players.length);
+    }
+});

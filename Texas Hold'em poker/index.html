@@ -10,7 +10,19 @@
     <div class="container">
         <header>
             <h1>🃏 德州扑克</h1>
-            <div class="game-info">
+            <div class="mode-selection" id="mode-selection">
+                <h2>选择游戏模式</h2>
+                <div class="mode-buttons">
+                    <button class="btn btn-mode" data-mode="single">单人模式 (1v1)</button>
+                    <button class="btn btn-mode" data-mode="multi">多人模式 (最多6人)</button>
+                </div>
+                <div class="player-count-selection" id="player-count-selection" style="display: none;">
+                    <label for="player-count">选择玩家数量 (2-6人):</label>
+                    <input type="number" id="player-count" min="2" max="6" value="3">
+                    <button class="btn btn-start" id="start-game-btn">开始游戏</button>
+                </div>
+            </div>
+            <div class="game-info" id="game-info" style="display: none;">
                 <div class="info-item">
                     <span>底池:</span>
                     <span id="pot">0</span>
@@ -23,41 +35,26 @@
                     <span>你的筹码:</span>
                     <span id="player-chips">1000</span>
                 </div>
+                <div class="info-item">
+                    <span>当前行动:</span>
+                    <span id="current-player">-</span>
+                </div>
             </div>
         </header>
 
-        <div class="game-area">
+        <div class="game-area" id="game-area" style="display: none;">
             <!-- 公共牌区域 -->
             <div class="community-cards">
                 <h2>公共牌</h2>
                 <div id="community-cards" class="cards-container"></div>
             </div>
 
-            <!-- 玩家区域 -->
-            <div class="player-area">
-                <div class="player-info">
-                    <h3>你</h3>
-                    <div id="player-cards" class="cards-container"></div>
-                    <div class="player-hand-info">
-                        <span id="player-hand-type"></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 电脑玩家区域 -->
-            <div class="opponent-area">
-                <div class="opponent-info">
-                    <h3>电脑</h3>
-                    <div id="opponent-cards" class="cards-container"></div>
-                    <div class="opponent-hand-info">
-                        <span id="opponent-hand-type"></span>
-                    </div>
-                </div>
-            </div>
+            <!-- 玩家区域容器 -->
+            <div id="players-container" class="players-container"></div>
         </div>
 
         <!-- 操作按钮区域 -->
-        <div class="action-area">
+        <div class="action-area" id="action-area" style="display: none;">
             <div class="bet-controls">
                 <label for="bet-amount">下注金额:</label>
                 <input type="number" id="bet-amount" min="0" value="0" step="10">
