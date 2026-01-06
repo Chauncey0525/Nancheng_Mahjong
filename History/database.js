@@ -95,15 +95,20 @@ function insertWeights(weights) {
             
             stmt.finalize((err) => {
                 if (err) {
+                    db.close();
                     reject(err);
                 } else {
                     console.log('权重配置插入完成');
-                    resolve();
+                    db.close((closeErr) => {
+                        if (closeErr) {
+                            reject(closeErr);
+                        } else {
+                            resolve();
+                        }
+                    });
                 }
             });
         });
-        
-        db.close();
     });
 }
 
@@ -119,44 +124,140 @@ function insertEmperor(emperor, weights) {
         }
         
         db.serialize(() => {
-            // 插入皇帝基本信息
-            db.run(
-                `INSERT OR REPLACE INTO emperors (name, intro, bio, total_score) VALUES (?, ?, ?, ?)`,
-                [emperor.name, emperor.intro, emperor.bio, total],
-                function(err) {
-                    if (err) {
-                        reject(err);
+            // 先查询是否已存在
+            db.get(`SELECT id FROM emperors WHERE name = ?`, [emperor.name], (err, row) => {
+                if (err) {
+                    db.close();
+                    reject(err);
+                    return;
+                }
+                
+                let emperorId;
+                if (row) {
+                    // 已存在，更新
+                    emperorId = row.id;
+                    db.run(
+                        `UPDATE emperors SET intro = ?, bio = ?, total_score = ? WHERE id = ?`,
+                        [emperor.intro, emperor.bio, total, emperorId],
+                        function(updateErr) {
+                            if (updateErr) {
+                                db.close();
+                                reject(updateErr);
+                                return;
+                            }
+                            insertAliasesAndScores(emperorId);
+                        }
+                    );
+                } else {
+                    // 不存在，插入
+                    db.run(
+                        `INSERT INTO emperors (name, intro, bio, total_score) VALUES (?, ?, ?, ?)`,
+                        [emperor.name, emperor.intro, emperor.bio, total],
+                        function(insertErr) {
+                            if (insertErr) {
+                                db.close();
+                                reject(insertErr);
+                                return;
+                            }
+                            emperorId = this.lastID;
+                            insertAliasesAndScores(emperorId);
+                        }
+                    );
+                }
+                
+                function insertAliasesAndScores(id) {
+                    // 先删除旧的别名和评分
+                    db.run(`DELETE FROM aliases WHERE emperor_id = ?`, [id], (err) => {
+                        if (err) {
+                            db.close();
+                            reject(err);
+                            return;
+                        }
+                        
+                        db.run(`DELETE FROM scores WHERE emperor_id = ?`, [id], (err) => {
+                            if (err) {
+                                db.close();
+                                reject(err);
+                                return;
+                            }
+                            
+                            // 插入别名
+                            if (emperor.aliases && emperor.aliases.length > 0) {
+                                const aliasStmt = db.prepare(`INSERT INTO aliases (emperor_id, alias) VALUES (?, ?)`);
+                                let aliasCount = 0;
+                                emperor.aliases.forEach(alias => {
+                                    aliasStmt.run(id, alias, (err) => {
+                                        if (err && !err.message.includes('UNIQUE constraint')) {
+                                            console.error(`插入别名失败: ${alias}`, err);
+                                        }
+                                    });
+                                    aliasCount++;
+                                });
+                                aliasStmt.finalize((err) => {
+                                    if (err) {
+                                        db.close();
+                                        reject(err);
+                                        return;
+                                    }
+                                    insertScores(id);
+                                });
+                            } else {
+                                insertScores(id);
+                            }
+                        });
+                    });
+                }
+                
+                function insertScores(id) {
+                    // 插入评分
+                    const scoreStmt = db.prepare(`INSERT INTO scores (emperor_id, metric, score) VALUES (?, ?, ?)`);
+                    let scoreCount = 0;
+                    const scoreEntries = Object.entries(emperor.scores);
+                    
+                    if (scoreEntries.length === 0) {
+                        scoreStmt.finalize((err) => {
+                            if (err) {
+                                db.close();
+                                reject(err);
+                            } else {
+                                db.close((closeErr) => {
+                                    if (closeErr) {
+                                        reject(closeErr);
+                                    } else {
+                                        resolve(id);
+                                    }
+                                });
+                            }
+                        });
                         return;
                     }
                     
-                    const emperorId = this.lastID;
-                    
-                    // 插入别名
-                    if (emperor.aliases && emperor.aliases.length > 0) {
-                        const aliasStmt = db.prepare(`INSERT OR REPLACE INTO aliases (emperor_id, alias) VALUES (?, ?)`);
-                        emperor.aliases.forEach(alias => {
-                            aliasStmt.run(emperorId, alias);
+                    scoreEntries.forEach(([metric, score]) => {
+                        scoreStmt.run(id, metric, score, (err) => {
+                            if (err && !err.message.includes('UNIQUE constraint')) {
+                                console.error(`插入评分失败: ${metric}`, err);
+                            }
                         });
-                        aliasStmt.finalize();
-                    }
+                        scoreCount++;
+                    });
                     
-                    // 插入评分
-                    const scoreStmt = db.prepare(`INSERT OR REPLACE INTO scores (emperor_id, metric, score) VALUES (?, ?, ?)`);
-                    for (const [metric, score] of Object.entries(emperor.scores)) {
-                        scoreStmt.run(emperorId, metric, score);
-                    }
                     scoreStmt.finalize((err) => {
                         if (err) {
+                            db.close();
                             reject(err);
                         } else {
-                            resolve(emperorId);
+                            db.close((closeErr) => {
+                                if (closeErr) {
+                                    reject(closeErr);
+                                } else {
+                                    resolve(id);
+                                }
+                            });
                         }
                     });
                 }
-            );
+            });
         });
-        
-        db.close();
     });
 }
 

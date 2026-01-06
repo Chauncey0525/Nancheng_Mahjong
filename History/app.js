@@ -79,7 +79,8 @@ function showEmperorDetails(emperor, rank) {
     const scoresGrid = document.getElementById('scoresGrid');
     scoresGrid.innerHTML = '';
     
-    Object.entries(WEIGHTS).forEach(([key, weight]) => {
+    const weights = window.WEIGHTS || {};
+    Object.entries(weights).forEach(([key, weight]) => {
         const score = emperor.scores[key] || 0;
         const scoreItem = document.createElement('div');
         scoreItem.className = 'score-item';
@@ -239,15 +240,15 @@ async function initializeApp() {
         // 显示加载提示
         topRankingList.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">正在加载数据...</div>';
         
-        // 加载数据
-        await initData();
+        // 加载数据（从 data-api.js）
+        const { WEIGHTS: loadedWeights, EMPERORS: loadedEmperors } = await initData();
         
         // 更新全局变量
-        window.WEIGHTS = WEIGHTS;
-        window.EMPERORS = EMPERORS;
+        window.WEIGHTS = loadedWeights;
+        window.EMPERORS = loadedEmperors;
         
-        // 构建排行榜
-        currentRanking = buildRanking();
+        // 构建排行榜（使用全局变量）
+        currentRanking = [...loadedEmperors].sort((a, b) => b.total - a.total);
         isInitialized = true;
         
         // 显示第一页

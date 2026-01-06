@@ -5,7 +5,11 @@ let EMPERORS = [];
 let isDataLoaded = false;
 
 // API基础URL
-const API_BASE_URL = window.location.origin;
+// 如果通过 file:// 协议打开，使用 localhost:3000
+// 否则使用当前页面的 origin
+const API_BASE_URL = (window.location.protocol === 'file:' || !window.location.origin || window.location.origin === 'null') 
+    ? 'http://localhost:3000' 
+    : window.location.origin;
 
 // 计算总分
 function calculateTotal(scores) {
@@ -25,6 +29,10 @@ async function loadWeights() {
         }
         WEIGHTS = await response.json();
         console.log('权重配置加载完成:', WEIGHTS);
+        // 在浏览器环境中，将数据暴露到全局作用域
+        if (typeof window !== 'undefined') {
+            window.WEIGHTS = WEIGHTS;
+        }
         return WEIGHTS;
     } catch (error) {
         console.error('加载权重配置失败:', error);
@@ -56,6 +64,10 @@ async function loadEmperors() {
         
         console.log(`皇帝数据加载完成: ${EMPERORS.length} 个皇帝`);
         isDataLoaded = true;
+        // 在浏览器环境中，将数据暴露到全局作用域
+        if (typeof window !== 'undefined') {
+            window.EMPERORS = EMPERORS;
+        }
         return EMPERORS;
     } catch (error) {
         console.error('加载皇帝数据失败:', error);
@@ -111,4 +123,14 @@ if (typeof module !== 'undefined' && module.exports) {
         searchEmperorAPI,
         buildRanking
     };
+}
+
+// 在浏览器环境中，将函数暴露到全局作用域
+if (typeof window !== 'undefined') {
+    window.initData = initData;
+    window.loadWeights = loadWeights;
+    window.loadEmperors = loadEmperors;
+    window.searchEmperorAPI = searchEmperorAPI;
+    window.buildRanking = buildRanking;
+    // 注意：WEIGHTS 和 EMPERORS 会在 initData 后通过 window 对象访问
 }
