@@ -297,6 +297,27 @@ header h1 {
 
 .details-header {
     text-align: center;
+}
+
+.emperor-titles {
+    margin: 15px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.titles-list {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.titles-list span {
+    padding: 5px 12px;
+    background: #f0f0f0;
+    border-radius: 15px;
+    color: #555;
+}
     margin-bottom: 30px;
     padding-bottom: 20px;
     border-bottom: 2px solid #e9ecef;

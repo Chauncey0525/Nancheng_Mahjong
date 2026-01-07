@@ -34,23 +34,21 @@ function initDatabase() {
                 CREATE TABLE IF NOT EXISTS emperors (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT UNIQUE NOT NULL,
-                    intro TEXT,
+                    dynasty TEXT,
+                    temple_name TEXT,
+                    posthumous_name TEXT,
+                    era_name TEXT,
                     bio TEXT,
+                    birth_year TEXT,
+                    death_year TEXT,
                     total_score REAL,
+                    rank INTEGER,
+                    dynasty_rank INTEGER,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
             
-            // 创建别名表
-            db.run(`
-                CREATE TABLE IF NOT EXISTS aliases (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    emperor_id INTEGER NOT NULL,
-                    alias TEXT NOT NULL,
-                    FOREIGN KEY (emperor_id) REFERENCES emperors(id) ON DELETE CASCADE,
-                    UNIQUE(emperor_id, alias)
-                )
-            `);
+            // 别名表已移除，改用emperors表的temple_name, posthumous_name, era_name字段
             
             // 创建评分表
             db.run(`
@@ -66,8 +64,9 @@ function initDatabase() {
             
             // 创建索引
             db.run(`CREATE INDEX IF NOT EXISTS idx_emperor_name ON emperors(name)`);
-            db.run(`CREATE INDEX IF NOT EXISTS idx_alias_alias ON aliases(alias)`);
-            db.run(`CREATE INDEX IF NOT EXISTS idx_alias_emperor ON aliases(emperor_id)`);
+            db.run(`CREATE INDEX IF NOT EXISTS idx_temple_name ON emperors(temple_name)`);
+            db.run(`CREATE INDEX IF NOT EXISTS idx_posthumous_name ON emperors(posthumous_name)`);
+            db.run(`CREATE INDEX IF NOT EXISTS idx_era_name ON emperors(era_name)`);
             
             db.close((err) => {
                 if (err) {
@@ -137,8 +136,8 @@ function insertEmperor(emperor, weights) {
                     // 已存在，更新
                     emperorId = row.id;
                     db.run(
-                        `UPDATE emperors SET dynasty = ?, intro = ?, bio = ?, total_score = ? WHERE id = ?`,
-                        [emperor.dynasty || null, emperor.intro, emperor.bio, total, emperorId],
+                        `UPDATE emperors SET dynasty = ?, temple_name = ?, posthumous_name = ?, era_name = ?, bio = ?, total_score = ? WHERE id = ?`,
+                        [emperor.dynasty || null, emperor.templeName || null, emperor.posthumousName || null, emperor.eraName || null, emperor.bio, total, emperorId],
                         function(updateErr) {
                             if (updateErr) {
                                 db.close();
@@ -151,8 +150,8 @@ function insertEmperor(emperor, weights) {
                 } else {
                     // 不存在，插入
                     db.run(
-                        `INSERT INTO emperors (name, dynasty, intro, bio, total_score) VALUES (?, ?, ?, ?, ?)`,
-                        [emperor.name, emperor.dynasty || null, emperor.intro, emperor.bio, total],
+                        `INSERT INTO emperors (name, dynasty, temple_name, posthumous_name, era_name, bio, total_score) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                        [emperor.name, emperor.dynasty || null, emperor.templeName || null, emperor.posthumousName || null, emperor.eraName || null, emperor.bio, total],
                         function(insertErr) {
                             if (insertErr) {
                                 db.close();
@@ -272,15 +271,15 @@ function getAllEmperors(dynasty = null) {
                 e.id,
                 e.name,
                 e.dynasty,
-                e.intro,
+                e.temple_name as templeName,
+                e.posthumous_name as posthumousName,
+                e.era_name as eraName,
                 e.bio,
                 e.total_score as total,
                 e.rank as globalRank,
                 e.dynasty_rank as dynastyRank,
-                GROUP_CONCAT(DISTINCT a.alias) as aliases,
                 GROUP_CONCAT(DISTINCT s.metric || ':' || s.score) as scores
             FROM emperors e
-            LEFT JOIN aliases a ON e.id = a.emperor_id
             LEFT JOIN scores s ON e.id = s.emperor_id
             GROUP BY e.id
             ORDER BY e.total_score DESC
@@ -309,9 +308,10 @@ function getAllEmperors(dynasty = null) {
                     id: row.id,
                     name: row.name,
                     dynasty: row.dynasty || '',
-                    aliases: row.aliases ? row.aliases.split(',') : [],
+                    templeName: row.templeName || null,
+                    posthumousName: row.posthumousName || null,
+                    eraName: row.eraName || null,
                     scores: scores,
-                    intro: row.intro,
                     bio: row.bio,
                     total: row.total,
                     globalRank: row.globalRank !== null && row.globalRank !== undefined ? parseInt(row.globalRank) : null,  // 直接使用数据库中的rank字段，确保是整数
@@ -341,18 +341,21 @@ function searchEmperor(query) {
             SELECT DISTINCT
                 e.id,
                 e.name,
-                e.intro,
+                e.dynasty,
+                e.temple_name as templeName,
+                e.posthumous_name as posthumousName,
+                e.era_name as eraName,
                 e.bio,
                 e.total_score as total,
-                GROUP_CONCAT(DISTINCT a.alias) as aliases,
+                e.rank as globalRank,
+                e.dynasty_rank as dynastyRank,
                 GROUP_CONCAT(DISTINCT s.metric || ':' || s.score) as scores
             FROM emperors e
-            LEFT JOIN aliases a ON e.id = a.emperor_id
             LEFT JOIN scores s ON e.id = s.emperor_id
-            WHERE e.name LIKE ? OR a.alias LIKE ?
+            WHERE e.name LIKE ? OR e.temple_name LIKE ? OR e.posthumous_name LIKE ? OR e.era_name LIKE ?
             GROUP BY e.id
             ORDER BY e.total_score DESC
-        `, [searchTerm, searchTerm], (err, rows) => {
+        `, [searchTerm, searchTerm, searchTerm, searchTerm], (err, rows) => {
             if (err) {
                 reject(err);
             } else {
@@ -371,11 +374,15 @@ function searchEmperor(query) {
                         id: row.id,
                         name: row.name,
                         dynasty: row.dynasty || '',
-                        aliases: row.aliases ? row.aliases.split(',') : [],
+                        templeName: row.templeName || null,
+                        posthumousName: row.posthumousName || null,
+                        eraName: row.eraName || null,
                         scores: scores,
                         intro: row.intro,
                         bio: row.bio,
-                        total: row.total
+                        total: row.total,
+                        globalRank: row.globalRank !== null && row.globalRank !== undefined ? parseInt(row.globalRank) : null,
+                        dynastyRank: row.dynastyRank !== null && row.dynastyRank !== undefined ? parseInt(row.dynastyRank) : null
                     };
                 });
                 
@@ -572,13 +579,13 @@ function getEmperorById(id) {
             SELECT 
                 e.id,
                 e.name,
-                e.intro,
+                e.temple_name as templeName,
+                e.posthumous_name as posthumousName,
+                e.era_name as eraName,
                 e.bio,
                 e.total_score as total,
-                GROUP_CONCAT(DISTINCT a.alias) as aliases,
                 GROUP_CONCAT(DISTINCT s.metric || ':' || s.score) as scores
             FROM emperors e
-            LEFT JOIN aliases a ON e.id = a.emperor_id
             LEFT JOIN scores s ON e.id = s.emperor_id
             WHERE e.id = ?
             GROUP BY e.id
@@ -602,9 +609,10 @@ function getEmperorById(id) {
                 resolve({
                     id: row.id,
                     name: row.name,
-                    aliases: row.aliases ? row.aliases.split(',') : [],
+                    templeName: row.templeName || null,
+                    posthumousName: row.posthumousName || null,
+                    eraName: row.eraName || null,
                     scores: scores,
-                    intro: row.intro,
                     bio: row.bio,
                     total: row.total
                 });
