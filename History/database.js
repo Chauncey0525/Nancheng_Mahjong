@@ -137,8 +137,8 @@ function insertEmperor(emperor, weights) {
                     // 已存在，更新
                     emperorId = row.id;
                     db.run(
-                        `UPDATE emperors SET intro = ?, bio = ?, total_score = ? WHERE id = ?`,
-                        [emperor.intro, emperor.bio, total, emperorId],
+                        `UPDATE emperors SET dynasty = ?, intro = ?, bio = ?, total_score = ? WHERE id = ?`,
+                        [emperor.dynasty || null, emperor.intro, emperor.bio, total, emperorId],
                         function(updateErr) {
                             if (updateErr) {
                                 db.close();
@@ -151,8 +151,8 @@ function insertEmperor(emperor, weights) {
                 } else {
                     // 不存在，插入
                     db.run(
-                        `INSERT INTO emperors (name, intro, bio, total_score) VALUES (?, ?, ?, ?)`,
-                        [emperor.name, emperor.intro, emperor.bio, total],
+                        `INSERT INTO emperors (name, dynasty, intro, bio, total_score) VALUES (?, ?, ?, ?, ?)`,
+                        [emperor.name, emperor.dynasty || null, emperor.intro, emperor.bio, total],
                         function(insertErr) {
                             if (insertErr) {
                                 db.close();
@@ -262,17 +262,21 @@ function insertEmperor(emperor, weights) {
 }
 
 // 获取所有皇帝（带排序）
-function getAllEmperors() {
+function getAllEmperors(dynasty = null) {
     return new Promise((resolve, reject) => {
         const db = getDB();
         
-        db.all(`
+        // 先获取所有皇帝，使用数据库中的rank字段作为总排名，dynasty_rank字段作为当朝排名
+        let sql = `
             SELECT 
                 e.id,
                 e.name,
+                e.dynasty,
                 e.intro,
                 e.bio,
                 e.total_score as total,
+                e.rank as globalRank,
+                e.dynasty_rank as dynastyRank,
                 GROUP_CONCAT(DISTINCT a.alias) as aliases,
                 GROUP_CONCAT(DISTINCT s.metric || ':' || s.score) as scores
             FROM emperors e
@@ -280,36 +284,49 @@ function getAllEmperors() {
             LEFT JOIN scores s ON e.id = s.emperor_id
             GROUP BY e.id
             ORDER BY e.total_score DESC
-        `, [], (err, rows) => {
-            db.close(); // 确保关闭数据库连接
+        `;
+        
+        db.all(sql, [], (err, allRows) => {
             if (err) {
+                db.close();
                 reject(err);
-            } else {
-                // 处理数据格式
-                const emperors = rows.map(row => {
-                    const scores = {};
-                    if (row.scores) {
-                        row.scores.split(',').forEach(item => {
-                            const [metric, score] = item.split(':');
-                            if (metric && score) {
-                                scores[metric] = parseFloat(score);
-                            }
-                        });
-                    }
-                    
-                    return {
-                        id: row.id,
-                        name: row.name,
-                        aliases: row.aliases ? row.aliases.split(',') : [],
-                        scores: scores,
-                        intro: row.intro,
-                        bio: row.bio,
-                        total: row.total
-                    };
-                });
-                
-                resolve(emperors);
+                return;
             }
+            
+            // 处理数据格式
+            const allEmperors = allRows.map(row => {
+                const scores = {};
+                if (row.scores) {
+                    row.scores.split(',').forEach(item => {
+                        const [metric, score] = item.split(':');
+                        if (metric && score) {
+                            scores[metric] = parseFloat(score);
+                        }
+                    });
+                }
+                
+                return {
+                    id: row.id,
+                    name: row.name,
+                    dynasty: row.dynasty || '',
+                    aliases: row.aliases ? row.aliases.split(',') : [],
+                    scores: scores,
+                    intro: row.intro,
+                    bio: row.bio,
+                    total: row.total,
+                    globalRank: row.globalRank !== null && row.globalRank !== undefined ? parseInt(row.globalRank) : null,  // 直接使用数据库中的rank字段，确保是整数
+                    dynastyRank: row.dynastyRank !== null && row.dynastyRank !== undefined ? parseInt(row.dynastyRank) : null  // 直接使用数据库中的dynasty_rank字段，确保是整数
+                };
+            });
+            
+            // 如果指定了朝代，则筛选（但排名已经基于所有皇帝计算好了）
+            let emperors = allEmperors;
+            if (dynasty) {
+                emperors = allEmperors.filter(emp => emp.dynasty === dynasty);
+            }
+            
+            db.close();
+            resolve(emperors);
         });
     });
 }
@@ -353,6 +370,7 @@ function searchEmperor(query) {
                     return {
                         id: row.id,
                         name: row.name,
+                        dynasty: row.dynasty || '',
                         aliases: row.aliases ? row.aliases.split(',') : [],
                         scores: scores,
                         intro: row.intro,
@@ -364,6 +382,49 @@ function searchEmperor(query) {
                 resolve(emperors);
             }
             db.close();
+        });
+    });
+}
+
+// 获取所有朝代列表（包含平均分和排名）
+function getAllDynasties() {
+    return new Promise((resolve, reject) => {
+        const db = getDB();
+        
+        db.all(`
+            SELECT 
+                dynasty,
+                COUNT(*) as count,
+                AVG(total_score) as avg_score
+            FROM emperors
+            WHERE dynasty IS NOT NULL AND dynasty != ''
+            GROUP BY dynasty
+            ORDER BY avg_score DESC
+        `, [], (err, rows) => {
+            if (err) {
+                db.close();
+                return reject(err);
+            }
+            
+            // 计算排名
+            const dynasties = rows.map((row, index) => {
+                // 确保 avg_score 是数字并格式化
+                let avgScore = 0;
+                if (row.avg_score !== null && row.avg_score !== undefined) {
+                    avgScore = parseFloat(row.avg_score);
+                    // 处理浮点数精度问题，保留2位小数
+                    avgScore = Math.round(avgScore * 100) / 100;
+                }
+                return {
+                    name: row.dynasty,
+                    count: row.count,
+                    avgScore: avgScore,
+                    rank: index + 1
+                };
+            });
+            
+            db.close();
+            resolve(dynasties);
         });
     });
 }
@@ -388,12 +449,179 @@ function getWeights() {
     });
 }
 
-module.exports = {
-    getDB,
-    initDatabase,
-    insertWeights,
-    insertEmperor,
-    getAllEmperors,
-    searchEmperor,
-    getWeights
-};
+// 更新皇帝信息
+function updateEmperor(emperorId, updates) {
+    return new Promise((resolve, reject) => {
+        const db = getDB();
+        
+        // 更新基本信息
+        if (updates.name || updates.intro || updates.bio !== undefined) {
+            const fields = [];
+            const values = [];
+            
+            if (updates.name) {
+                fields.push('name = ?');
+                values.push(updates.name);
+            }
+            if (updates.intro !== undefined) {
+                fields.push('intro = ?');
+                values.push(updates.intro);
+            }
+            if (updates.bio !== undefined) {
+                fields.push('bio = ?');
+                values.push(updates.bio);
+            }
+            
+            if (fields.length > 0) {
+                values.push(emperorId);
+                db.run(
+                    `UPDATE emperors SET ${fields.join(', ')} WHERE id = ?`,
+                    values,
+                    (err) => {
+                        if (err) {
+                            db.close();
+                            return reject(err);
+                        }
+                    }
+                );
+            }
+        }
+        
+        // 更新评分
+        if (updates.scores) {
+            const stmt = db.prepare('UPDATE scores SET score = ? WHERE emperor_id = ? AND metric = ?');
+            let updateCount = 0;
+            const totalUpdates = Object.keys(updates.scores).length;
+            
+            if (totalUpdates === 0) {
+                if (updates.name || updates.intro || updates.bio !== undefined) {
+                    recalculateTotalAndClose(emperorId, db, resolve, reject);
+                } else {
+                    db.close();
+                    resolve(emperorId);
+                }
+                return;
+            }
+            
+            for (const [metric, score] of Object.entries(updates.scores)) {
+                stmt.run(score, emperorId, metric, (err) => {
+                    if (err) {
+                        console.error(`更新评分失败 ${metric}:`, err.message);
+                    }
+                    updateCount++;
+                    if (updateCount === totalUpdates) {
+                        stmt.finalize(() => {
+                            recalculateTotalAndClose(emperorId, db, resolve, reject);
+                        });
+                    }
+                });
+            }
+        } else {
+            if (updates.name || updates.intro || updates.bio !== undefined) {
+                recalculateTotalAndClose(emperorId, db, resolve, reject);
+            } else {
+                db.close();
+                resolve(emperorId);
+            }
+        }
+    });
+}
+
+// 重新计算总分并关闭数据库
+function recalculateTotalAndClose(emperorId, db, resolve, reject) {
+    db.all('SELECT metric, weight FROM weights', [], (err, weightRows) => {
+        if (err) {
+            db.close();
+            return reject(err);
+        }
+        
+        const weights = {};
+        weightRows.forEach(row => {
+            weights[row.metric] = row.weight;
+        });
+        
+        db.all('SELECT metric, score FROM scores WHERE emperor_id = ?', [emperorId], (err, scoreRows) => {
+            if (err) {
+                db.close();
+                return reject(err);
+            }
+            
+            let total = 0;
+            scoreRows.forEach(row => {
+                total += (row.score || 0) * (weights[row.metric] || 0);
+            });
+            
+            db.run('UPDATE emperors SET total_score = ? WHERE id = ?', [total, emperorId], (err) => {
+                db.close();
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(emperorId);
+                }
+            });
+        });
+    });
+}
+
+// 根据ID获取皇帝
+function getEmperorById(id) {
+    return new Promise((resolve, reject) => {
+        const db = getDB();
+        
+        db.get(`
+            SELECT 
+                e.id,
+                e.name,
+                e.intro,
+                e.bio,
+                e.total_score as total,
+                GROUP_CONCAT(DISTINCT a.alias) as aliases,
+                GROUP_CONCAT(DISTINCT s.metric || ':' || s.score) as scores
+            FROM emperors e
+            LEFT JOIN aliases a ON e.id = a.emperor_id
+            LEFT JOIN scores s ON e.id = s.emperor_id
+            WHERE e.id = ?
+            GROUP BY e.id
+        `, [id], (err, row) => {
+            db.close();
+            if (err) {
+                reject(err);
+            } else if (!row) {
+                reject(new Error('未找到皇帝'));
+            } else {
+                const scores = {};
+                if (row.scores) {
+                    row.scores.split(',').forEach(item => {
+                        const [metric, score] = item.split(':');
+                        if (metric && score) {
+                            scores[metric] = parseFloat(score);
+                        }
+                    });
+                }
+                
+                resolve({
+                    id: row.id,
+                    name: row.name,
+                    aliases: row.aliases ? row.aliases.split(',') : [],
+                    scores: scores,
+                    intro: row.intro,
+                    bio: row.bio,
+                    total: row.total
+                });
+            }
+        });
+    });
+}
+
+    module.exports = {
+        getDB,
+        initDatabase,
+        insertWeights,
+        insertEmperor,
+        getAllEmperors,
+        searchEmperor,
+        getWeights,
+        getAllDynasties,
+        updateEmperor,
+        getEmperorById
+    };

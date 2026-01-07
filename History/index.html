@@ -19,13 +19,26 @@
                 <button id="searchBtn">搜索</button>
             </div>
             <div id="searchSuggestions" class="suggestions"></div>
+            <div class="filter-section">
+                <label for="dynastyFilter">朝代筛选：</label>
+                <select id="dynastyFilter">
+                    <option value="">全部朝代</option>
+                </select>
+            </div>
         </div>
 
         <div id="emperorDetails" class="emperor-details hidden">
             <div class="details-header">
                 <h2 id="emperorName"></h2>
-                <div class="rank-badge">
-                    <span>排名：</span><span id="emperorRank"></span>
+                <div class="rank-badges">
+                    <div class="rank-badge">
+                        <span>总排名</span>
+                        <span id="emperorGlobalRank">-</span>
+                    </div>
+                    <div class="rank-badge" id="dynastyRankBadge" style="display: none;">
+                        <span>当朝排名</span>
+                        <span id="emperorDynastyRank">-</span>
+                    </div>
                 </div>
                 <div class="total-score">
                     <span>总分：</span><span id="emperorTotal"></span>
@@ -64,6 +77,12 @@
                 <button id="nextPageBtn">下一页</button>
                 <button id="lastPageBtn">末页</button>
             </div>
+        </div>
+
+        <div class="dynasty-ranking-section">
+            <h2>🏛️ 朝代排行榜</h2>
+            <p class="section-subtitle">按平均分排名</p>
+            <div id="dynastyRankingList" class="dynasty-ranking-list"></div>
         </div>
     </div>
 

@@ -6,19 +6,13 @@
     "*.sqlite3": "binary"
   },
   
-  // 排除文件，不在文件浏览器中显示
+  // 排除文件，不在文件浏览器中显示（数据库文件已取消隐藏）
   "files.exclude": {
-    "**/*.db": true,
-    "**/*.sqlite": true,
-    "**/*.sqlite3": true,
     "**/node_modules": true
   },
   
-  // 搜索时排除的文件
+  // 搜索时排除的文件（数据库文件已取消隐藏）
   "search.exclude": {
-    "**/*.db": true,
-    "**/*.sqlite": true,
-    "**/*.sqlite3": true,
     "**/node_modules": true
   }
 }
