@@ -129,6 +129,41 @@ npm start
 - `GET /api/emperors/search?q=关键词` - 搜索皇帝
 - `GET /api/weights` - 获取权重配置
 
+## 从CBDB导入数据
+
+CBDB（中国历代人物传记资料库）是一个权威的历史人物数据库。您可以从CBDB导入皇帝数据到本地数据库。
+
+### 导入步骤
+
+1. **下载CBDB数据**
+   - 访问CBDB官网：https://chinesecbdb.hsites.harvard.edu/下载
+   - 下载SQLite版本的数据文件
+   - 将文件放在 `History` 目录下，命名为 `cbdb.db`（或使用其他名称）
+
+2. **运行导入脚本**
+   ```bash
+   cd History
+   node import_cbdb.js [CBDB文件路径]
+   ```
+   
+   或者使用批处理文件：
+   ```bash
+   import-cbdb.bat cbdb.db
+   ```
+
+3. **脚本功能**
+   - 自动检测CBDB数据库的表结构
+   - 智能匹配字段名称（支持多种命名格式）
+   - 提取皇帝数据（根据朝代、庙号、谥号、年号等特征）
+   - 转换数据格式并导入到本地数据库
+   - 自动跳过已存在的记录
+
+### 注意事项
+
+- CBDB数据中的评分将使用默认值（各指标70分），您可以在导入后手动调整
+- 如果CBDB中的字段名称与预期不符，脚本会尝试自动匹配
+- 建议在导入前备份 `emperors.db` 文件
+
 ## 数据库结构
 
 ### weights 表
