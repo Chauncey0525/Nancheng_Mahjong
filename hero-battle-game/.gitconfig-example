@@ -1,0 +1,14 @@
+# Git中文支持配置示例
+# 将这些配置添加到你的全局git配置中
+
+[core]
+    quotepath = false
+
+[i18n]
+    commitencoding = utf-8
+    logoutputencoding = utf-8
+
+# 设置方法：
+# git config --global i18n.commitencoding utf-8
+# git config --global i18n.logoutputencoding utf-8
+# git config --global core.quotepath false
