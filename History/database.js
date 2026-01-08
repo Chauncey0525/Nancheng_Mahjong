@@ -3,7 +3,6 @@ const path = require('path');
 
 const DB_PATH = path.join(__dirname, 'emperors.db');
 
-// 打开数据库连接
 function getDB() {
     return new sqlite3.Database(DB_PATH, (err) => {
         if (err) {
@@ -14,13 +13,11 @@ function getDB() {
     });
 }
 
-// 初始化数据库表结构
 function initDatabase() {
     return new Promise((resolve, reject) => {
         const db = getDB();
         
         db.serialize(() => {
-            // 创建权重配置表
             db.run(`
                 CREATE TABLE IF NOT EXISTS weights (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,7 +26,6 @@ function initDatabase() {
                 )
             `);
             
-            // 创建皇帝表
             db.run(`
                 CREATE TABLE IF NOT EXISTS emperors (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,14 +39,10 @@ function initDatabase() {
                     death_year TEXT,
                     total_score REAL,
                     rank INTEGER,
-                    dynasty_rank INTEGER,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    dynasty_rank INTEGER
                 )
             `);
             
-            // 别名表已移除，改用emperors表的temple_name, posthumous_name, era_name字段
-            
-            // 创建评分表
             db.run(`
                 CREATE TABLE IF NOT EXISTS scores (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,7 +54,6 @@ function initDatabase() {
                 )
             `);
             
-            // 创建索引
             db.run(`CREATE INDEX IF NOT EXISTS idx_emperor_name ON emperors(name)`);
             db.run(`CREATE INDEX IF NOT EXISTS idx_temple_name ON emperors(temple_name)`);
             db.run(`CREATE INDEX IF NOT EXISTS idx_posthumous_name ON emperors(posthumous_name)`);
@@ -80,7 +71,6 @@ function initDatabase() {
     });
 }
 
-// 插入权重配置
 function insertWeights(weights) {
     return new Promise((resolve, reject) => {
         const db = getDB();
@@ -111,7 +101,6 @@ function insertWeights(weights) {
     });
 }
 
-// 插入皇帝数据
 function insertEmperor(emperor, weights) {
     return new Promise((resolve, reject) => {
         const db = getDB();
@@ -123,7 +112,6 @@ function insertEmperor(emperor, weights) {
         }
         
         db.serialize(() => {
-            // 先查询是否已存在
             db.get(`SELECT id FROM emperors WHERE name = ?`, [emperor.name], (err, row) => {
                 if (err) {
                     db.close();
@@ -133,7 +121,6 @@ function insertEmperor(emperor, weights) {
                 
                 let emperorId;
                 if (row) {
-                    // 已存在，更新
                     emperorId = row.id;
                     db.run(
                         `UPDATE emperors SET dynasty = ?, temple_name = ?, posthumous_name = ?, era_name = ?, bio = ?, total_score = ? WHERE id = ?`,
@@ -148,7 +135,6 @@ function insertEmperor(emperor, weights) {
                         }
                     );
                 } else {
-                    // 不存在，插入
                     db.run(
                         `INSERT INTO emperors (name, dynasty, temple_name, posthumous_name, era_name, bio, total_score) VALUES (?, ?, ?, ?, ?, ?, ?)`,
                         [emperor.name, emperor.dynasty || null, emperor.templeName || null, emperor.posthumousName || null, emperor.eraName || null, emperor.bio, total],
@@ -165,7 +151,6 @@ function insertEmperor(emperor, weights) {
                 }
                 
                 function insertAliasesAndScores(id) {
-                    // 先删除旧的别名和评分
                     db.run(`DELETE FROM aliases WHERE emperor_id = ?`, [id], (err) => {
                         if (err) {
                             db.close();
@@ -180,7 +165,6 @@ function insertEmperor(emperor, weights) {
                                 return;
                             }
                             
-                            // 插入别名
                             if (emperor.aliases && emperor.aliases.length > 0) {
                                 const aliasStmt = db.prepare(`INSERT INTO aliases (emperor_id, alias) VALUES (?, ?)`);
                                 let aliasCount = 0;
@@ -208,7 +192,6 @@ function insertEmperor(emperor, weights) {
                 }
                 
                 function insertScores(id) {
-                    // 插入评分
                     const scoreStmt = db.prepare(`INSERT INTO scores (emperor_id, metric, score) VALUES (?, ?, ?)`);
                     let scoreCount = 0;
                     const scoreEntries = Object.entries(emperor.scores);
@@ -260,7 +243,6 @@ function insertEmperor(emperor, weights) {
     });
 }
 
-// 获取所有皇帝（带排序）
 function getAllEmperors(dynasty = null) {
     return new Promise((resolve, reject) => {
         const db = getDB();
@@ -331,7 +313,6 @@ function getAllEmperors(dynasty = null) {
     });
 }
 
-// 根据查询搜索皇帝
 function searchEmperor(query) {
     return new Promise((resolve, reject) => {
         const db = getDB();
@@ -393,7 +374,6 @@ function searchEmperor(query) {
     });
 }
 
-// 获取所有朝代列表（包含平均分和排名）
 function getAllDynasties() {
     return new Promise((resolve, reject) => {
         const db = getDB();
@@ -436,7 +416,6 @@ function getAllDynasties() {
     });
 }
 
-// 获取权重配置
 function getWeights() {
     return new Promise((resolve, reject) => {
         const db = getDB();
@@ -456,7 +435,6 @@ function getWeights() {
     });
 }
 
-// 更新皇帝信息
 function updateEmperor(emperorId, updates) {
     return new Promise((resolve, reject) => {
         const db = getDB();
@@ -534,7 +512,6 @@ function updateEmperor(emperorId, updates) {
     });
 }
 
-// 重新计算总分并关闭数据库
 function recalculateTotalAndClose(emperorId, db, resolve, reject) {
     db.all('SELECT metric, weight FROM weights', [], (err, weightRows) => {
         if (err) {
@@ -570,7 +547,6 @@ function recalculateTotalAndClose(emperorId, db, resolve, reject) {
     });
 }
 
-// 根据ID获取皇帝
 function getEmperorById(id) {
     return new Promise((resolve, reject) => {
         const db = getDB();

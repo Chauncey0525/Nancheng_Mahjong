@@ -6,14 +6,10 @@ const { getAllEmperors, searchEmperor, getWeights, getAllDynasties } = require('
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 中间件
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// API路由
-
-// 获取所有皇帝（已排序）
 app.get('/api/emperors', async (req, res) => {
     try {
         const dynasty = req.query.dynasty || null;
@@ -25,7 +21,6 @@ app.get('/api/emperors', async (req, res) => {
     }
 });
 
-// 获取所有朝代列表
 app.get('/api/dynasties', async (req, res) => {
     try {
         const dynasties = await getAllDynasties();
@@ -36,7 +31,6 @@ app.get('/api/dynasties', async (req, res) => {
     }
 });
 
-// 搜索皇帝
 app.get('/api/emperors/search', async (req, res) => {
     try {
         const query = req.query.q || '';
@@ -51,7 +45,6 @@ app.get('/api/emperors/search', async (req, res) => {
     }
 });
 
-// 获取权重配置
 app.get('/api/weights', async (req, res) => {
     try {
         const weights = await getWeights();
@@ -62,7 +55,6 @@ app.get('/api/weights', async (req, res) => {
     }
 });
 
-// 启动服务器
 app.listen(PORT, () => {
     console.log(`服务器运行在 http://localhost:${PORT}`);
     console.log(`API端点:`);

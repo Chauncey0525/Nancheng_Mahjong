@@ -142,7 +142,6 @@ npm start
 - `intro` - 简介
 - `bio` - 生平事迹
 - `total_score` - 总分（已计算）
-- `created_at` - 创建时间
 
 ### aliases 表
 - `id` - 主键

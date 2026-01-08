@@ -476,7 +476,11 @@ header h1 {
 #firstPageBtn,
 #prevPageBtn,
 #nextPageBtn,
-#lastPageBtn {
+#lastPageBtn,
+#dynastyFirstPageBtn,
+#dynastyPrevPageBtn,
+#dynastyNextPageBtn,
+#dynastyLastPageBtn {
     padding: 10px 16px;
     margin: 5px;
     border: none;
@@ -491,7 +495,11 @@ header h1 {
 #firstPageBtn:hover,
 #prevPageBtn:hover,
 #nextPageBtn:hover,
-#lastPageBtn:hover {
+#lastPageBtn:hover,
+#dynastyFirstPageBtn:hover,
+#dynastyPrevPageBtn:hover,
+#dynastyNextPageBtn:hover,
+#dynastyLastPageBtn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
@@ -499,7 +507,11 @@ header h1 {
 #firstPageBtn:disabled,
 #prevPageBtn:disabled,
 #nextPageBtn:disabled,
-#lastPageBtn:disabled {
+#lastPageBtn:disabled,
+#dynastyFirstPageBtn:disabled,
+#dynastyPrevPageBtn:disabled,
+#dynastyNextPageBtn:disabled,
+#dynastyLastPageBtn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
@@ -515,7 +527,8 @@ header h1 {
     flex-wrap: wrap;
 }
 
-#pageInfo {
+#pageInfo,
+#dynastyPageInfo {
     font-weight: bold;
     color: #333;
 }
