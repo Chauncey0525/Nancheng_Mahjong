@@ -52,21 +52,7 @@ npm install
 
 ### 启动项目
 
-#### 方式1：使用批处理文件（Windows）
-
-**启动后端**：
-```bash
-cd backend
-start.bat
-```
-
-**启动前端**（新终端窗口）：
-```bash
-cd frontend
-start.bat
-```
-
-#### 方式2：使用npm命令
+使用npm命令启动：
 
 **启动后端**：
 ```bash
