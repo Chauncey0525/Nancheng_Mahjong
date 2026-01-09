@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { battleAPI, playerAPI } from '../services/api';
 import './BattleArena.css';
 

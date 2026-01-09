@@ -12,8 +12,10 @@ app.use(express.json());
 // 请求日志中间件
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    console.log(`[请求] 完整URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+    console.log(`[请求] 查询参数:`, req.query);
     if (req.body && Object.keys(req.body).length > 0) {
-        console.log('请求体:', JSON.stringify(req.body));
+        console.log('[请求] 请求体:', JSON.stringify(req.body));
     }
     next();
 });
@@ -34,15 +36,25 @@ const playerRoutes = require('./routes/players');
 const battleRoutes = require('./routes/battles');
 const gachaRoutes = require('./routes/gacha');
 
+// 健康检查（放在路由之前，避免被404处理捕获）
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: '服务器运行正常' });
+});
+
 // 使用路由
 app.use('/api/heroes', heroRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/battles', battleRoutes);
 app.use('/api/gacha', gachaRoutes);
 
-// 健康检查
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: '服务器运行正常' });
+// 404处理 - 捕获所有未匹配的API路由（放在所有路由之后）
+app.use('/api/*', (req, res) => {
+    console.log(`[404] 未匹配的路由: ${req.method} ${req.originalUrl}`);
+    console.log(`[404] 请求路径: ${req.path}`);
+    res.status(404).json({ 
+        success: false,
+        error: `API端点不存在: ${req.method} ${req.originalUrl}` 
+    });
 });
 
 // 初始化数据库并启动服务器

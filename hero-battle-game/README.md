@@ -222,6 +222,34 @@ npm run dev
 - [ ] 技能系统完善
 - [ ] UI/UX优化
 
+## Git中文提交
+
+### 配置Git中文支持（首次使用）
+
+在Git Bash中运行：
+
+```bash
+bash setup-git-chinese.sh
+```
+
+### 提交代码
+
+**方法1：直接提交（推荐）**
+
+```bash
+git add -A
+git commit -m "你的中文commit信息"
+git push origin main
+```
+
+**方法2：使用辅助脚本**
+
+```bash
+bash git-commit-chinese.sh "你的中文commit信息"
+```
+
+> ⚠️ **注意**：请使用Git Bash提交，不要在PowerShell中直接使用`git commit -m "中文"`，否则会出现乱码。
+
 ## 许可证
 
 MIT

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import BattleArena from '../components/BattleArena';
 import './BattlePage.css';
 

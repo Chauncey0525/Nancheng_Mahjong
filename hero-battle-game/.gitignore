@@ -7,6 +7,9 @@ dist/
 build/
 *.log
 
+# Vite缓存
+.vite/
+
 # 数据库文件
 *.db
 *.sqlite
@@ -34,3 +37,9 @@ Thumbs.db
 # 临时文件
 *.tmp
 *.temp
+
+# 日志文件
+logs/
+*.log
+*.pid
+*.bak

@@ -4,30 +4,63 @@ const heroService = require('./heroService');
 
 /**
  * 验证用户名格式
+ * 通用标准：3-30个字符，允许字母、数字、下划线、连字符、点号
  */
 function validateUsername(username) {
     if (!username || typeof username !== 'string') {
         return { valid: false, error: '用户名不能为空' };
     }
-    if (username.length < 3 || username.length > 20) {
-        return { valid: false, error: '用户名长度必须在3-20个字符之间' };
+    
+    // 去除首尾空格
+    const trimmedUsername = username.trim();
+    if (trimmedUsername.length === 0) {
+        return { valid: false, error: '用户名不能为空' };
     }
-    if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
-        return { valid: false, error: '用户名只能包含字母、数字、下划线和中文' };
+    
+    // 长度检查：3-30个字符
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 30) {
+        return { valid: false, error: '用户名长度必须在3-30个字符之间' };
     }
+    
+    // 格式检查：只允许字母、数字、下划线、连字符、点号
+    // 不能以点号、连字符开头或结尾
+    if (!/^[a-zA-Z0-9_][a-zA-Z0-9_.-]*[a-zA-Z0-9_]$|^[a-zA-Z0-9_]{1,2}$/.test(trimmedUsername)) {
+        return { valid: false, error: '用户名只能包含字母、数字、下划线(_)、连字符(-)和点号(.)，且不能以点号或连字符开头或结尾' };
+    }
+    
+    // 不能包含连续的点号或连字符
+    if (/\.{2,}|-{2,}/.test(trimmedUsername)) {
+        return { valid: false, error: '用户名不能包含连续的点号或连字符' };
+    }
+    
     return { valid: true };
 }
 
 /**
  * 验证密码格式
+ * 通用标准：至少8个字符，建议包含大小写字母和数字
  */
 function validatePassword(password) {
     if (!password || typeof password !== 'string') {
         return { valid: false, error: '密码不能为空' };
     }
-    if (password.length < 6 || password.length > 50) {
-        return { valid: false, error: '密码长度必须在6-50个字符之间' };
+    
+    // 长度检查：至少8个字符，最多128个字符
+    if (password.length < 8) {
+        return { valid: false, error: '密码长度至少需要8个字符' };
     }
+    if (password.length > 128) {
+        return { valid: false, error: '密码长度不能超过128个字符' };
+    }
+    
+    // 检查是否包含空格
+    if (/\s/.test(password)) {
+        return { valid: false, error: '密码不能包含空格' };
+    }
+    
+    // 可选：检查密码强度（不强制，但给出建议）
+    // 这里只做基本验证，不强求特殊字符
+    
     return { valid: true };
 }
 
@@ -56,10 +89,10 @@ async function register(username, password) {
         console.log('[playerService] 数据库连接已建立');
         
         try {
-            // 检查用户名是否已存在
+            // 检查用户名是否已存在（使用去除空格后的用户名）
             console.log('[playerService] 检查用户名是否已存在...');
             const existingUser = await new Promise((resolveQuery, rejectQuery) => {
-                db.get('SELECT id FROM players WHERE username = ?', [username], (err, row) => {
+                db.get('SELECT id FROM players WHERE username = ?', [trimmedUsername], (err, row) => {
                     if (err) {
                         console.error('[playerService] 查询用户名失败:', err);
                         rejectQuery(err);
@@ -81,12 +114,12 @@ async function register(username, password) {
             const hashedPassword = await bcrypt.hash(password, 10);
             console.log('[playerService] 密码加密完成');
             
-            // 创建玩家
+            // 创建玩家（使用去除空格后的用户名）
             console.log('[playerService] 开始插入新用户...');
             const insertResult = await new Promise((resolveInsert, rejectInsert) => {
                 db.run(
                     'INSERT INTO players (username, password) VALUES (?, ?)',
-                    [username, hashedPassword],
+                    [trimmedUsername, hashedPassword],
                     function(insertErr) {
                         if (insertErr) {
                             console.error('[playerService] 插入用户失败:', insertErr);
@@ -145,14 +178,20 @@ async function login(username, password) {
             return reject(new Error('用户名和密码不能为空'));
         }
         
+        // 登录时也去除用户名首尾空格
+        const trimmedUsername = username.trim();
+        if (trimmedUsername.length === 0) {
+            return reject(new Error('用户名不能为空'));
+        }
+        
         const db = getDB();
         
         try {
-            // 先查找用户
+            // 先查找用户（使用去除空格后的用户名）
             const row = await new Promise((resolveQuery, rejectQuery) => {
                 db.get(
                     'SELECT id, username, password, coins, gems, level, exp, pvp_rank, pvp_points FROM players WHERE username = ?',
-                    [username],
+                    [trimmedUsername],
                     (err, row) => {
                         if (err) {
                             rejectQuery(err);

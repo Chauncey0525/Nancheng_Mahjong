@@ -31,19 +31,32 @@ api.interceptors.request.use(
 // 响应拦截器
 api.interceptors.response.use(
     response => {
+        // 直接返回response.data，让调用方处理success字段
         return response.data;
     },
     error => {
         console.error('API错误:', error);
+        console.error('错误详情:', {
+            message: error.message,
+            code: error.code,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data
+        });
         
         // 处理超时错误
-        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
             error.message = '请求超时，请检查后端服务器是否正常运行';
         }
         
         // 处理网络错误
-        if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+        if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
             error.message = '无法连接到服务器，请确保后端服务已启动（http://localhost:3001）';
+        }
+        
+        // 处理404错误
+        if (error.response?.status === 404) {
+            error.message = `API端点不存在: ${error.config?.method?.toUpperCase()} ${error.config?.url}`;
         }
         
         return Promise.reject(error);
