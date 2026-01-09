@@ -1,0 +1,7 @@
+添加Git中文支持配置和修复乱码commit的脚本
+
+- 创建setup-git-chinese.sh：配置Git使用UTF-8编码
+- 创建complete-fix-commits.sh：自动化修复乱码commit
+- 创建fix-commits-chinese.sh：手动修复乱码commit的辅助脚本
+- 创建GIT_CHINESE_SETUP.md：详细的配置和修复指南
+- 确保以后所有commit信息都能正确显示中文
