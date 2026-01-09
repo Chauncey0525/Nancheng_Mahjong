@@ -2,9 +2,6 @@
   "name": "@Chauncey0525/hero-battle-game-frontend",
   "version": "1.0.0",
   "type": "module",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

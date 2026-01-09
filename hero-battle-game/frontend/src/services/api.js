@@ -1,12 +1,13 @@
 import axios from 'axios';
 
 // API基础URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// 使用相对路径，通过Vite代理访问后端
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // 创建axios实例
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 10000,
+    timeout: 30000, // 增加到30秒，bcrypt加密可能需要更多时间
     headers: {
         'Content-Type': 'application/json'
     }
@@ -34,6 +35,17 @@ api.interceptors.response.use(
     },
     error => {
         console.error('API错误:', error);
+        
+        // 处理超时错误
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            error.message = '请求超时，请检查后端服务器是否正常运行';
+        }
+        
+        // 处理网络错误
+        if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+            error.message = '无法连接到服务器，请确保后端服务已启动（http://localhost:3001）';
+        }
+        
         return Promise.reject(error);
     }
 );

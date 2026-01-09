@@ -52,17 +52,39 @@ npm install
 
 ### 启动项目
 
-使用npm命令启动：
+#### 方式1：使用启动脚本（推荐）
 
-**启动后端**：
+**Windows系统**：
+```bash
+# 双击运行或在命令行执行
+start-game-enhanced.bat
+```
+
+**Git Bash（Linux/Mac）**：
+```bash
+bash start-game.sh
+```
+
+启动脚本会自动：
+- ✅ 检查Node.js和npm是否安装
+- ✅ 检查并安装依赖（如果未安装）
+- ✅ 启动后端服务器（新窗口，端口3001）
+- ✅ 启动前端开发服务器（新窗口，端口5173）
+- ✅ 自动打开浏览器
+
+#### 方式2：手动启动
+
+**第一步：启动后端服务器**
 ```bash
 cd backend
+npm install  # 首次运行需要安装依赖
 npm start
 ```
 
-**启动前端**（新终端窗口）：
+**第二步：启动前端服务器**（新开一个终端窗口）
 ```bash
 cd frontend
+npm install  # 首次运行需要安装依赖
 npm run dev
 ```
 
@@ -71,47 +93,6 @@ npm run dev
 - 前端：http://localhost:5173
 - 后端API：http://localhost:3001
 
-## GitHub Packages 配置（可选）
-
-如果需要使用GitHub Packages来发布或安装私有包，需要配置认证：
-
-### 1. 创建GitHub Personal Access Token
-
-1. 访问 https://github.com/settings/tokens
-2. 点击 "Generate new token (classic)"
-3. 选择权限：`read:packages` 和 `write:packages`
-4. 生成并复制token
-
-### 2. 设置环境变量
-
-**Windows PowerShell**:
-```powershell
-$env:GITHUB_TOKEN="your_token_here"
-```
-
-**Windows CMD**:
-```cmd
-set GITHUB_TOKEN=your_token_here
-```
-
-**永久设置（用户级别）**:
-```powershell
-[System.Environment]::SetEnvironmentVariable("GITHUB_TOKEN", "your_token_here", "User")
-```
-
-### 3. 使用GitHub Packages
-
-项目根目录的 `.npmrc` 文件已配置好，使用环境变量 `GITHUB_TOKEN` 进行认证。
-
-如果需要发布包到GitHub Packages，在 `package.json` 中添加：
-
-```json
-{
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  }
-}
-```
 
 ## 功能特性
 
@@ -137,8 +118,65 @@ set GITHUB_TOKEN=your_token_here
 - `GET /api/heroes/search/:query` - 搜索英雄
 
 ### 玩家相关
-- `POST /api/players/register` - 注册
-- `POST /api/players/login` - 登录
+
+#### 注册账号
+- **接口**: `POST /api/players/register`
+- **请求体**:
+  ```json
+  {
+    "username": "玩家用户名",
+    "password": "密码"
+  }
+  ```
+- **响应**:
+  ```json
+  {
+    "success": true,
+    "message": "注册成功",
+    "data": {
+      "id": 1,
+      "username": "玩家用户名",
+      "coins": 1000,
+      "gems": 100,
+      "level": 1,
+      "exp": 0,
+      "pvpRank": 0,
+      "pvpPoints": 1000
+    }
+  }
+  ```
+- **验证规则**:
+  - 用户名：3-20个字符，只能包含字母、数字、下划线和中文
+  - 密码：6-50个字符
+
+#### 登录
+- **接口**: `POST /api/players/login`
+- **请求体**:
+  ```json
+  {
+    "username": "玩家用户名",
+    "password": "密码"
+  }
+  ```
+- **响应**:
+  ```json
+  {
+    "success": true,
+    "message": "登录成功",
+    "data": {
+      "id": 1,
+      "username": "玩家用户名",
+      "coins": 1000,
+      "gems": 100,
+      "level": 1,
+      "exp": 0,
+      "pvpRank": 0,
+      "pvpPoints": 1000
+    }
+  }
+  ```
+
+#### 其他接口
 - `GET /api/players/:id` - 获取玩家信息
 - `GET /api/players/:id/heroes` - 获取玩家的英雄列表
 
@@ -155,11 +193,21 @@ set GITHUB_TOKEN=your_token_here
 
 主要数据表：
 - `heroes` - 英雄基础信息
-- `players` - 玩家账户
+- `players` - 玩家账户（包含用户名、加密密码、金币、宝石、等级等）
 - `player_heroes` - 玩家拥有的英雄
 - `battles` - 战斗记录
 - `skills` - 技能定义
 - `hero_skills` - 英雄技能关联
+
+### 玩家账号系统
+
+- **密码加密**: 使用bcrypt进行密码哈希加密（salt rounds = 10）
+- **账号存储**: 玩家账号信息存储在`players`表中
+- **登录验证**: 通过验证数据库中的用户名和加密密码进行登录
+- **安全特性**:
+  - 密码使用bcrypt加密存储，不会明文保存
+  - 用户名唯一性验证
+  - 输入格式验证（用户名长度、字符限制等）
 
 ## 开发计划
 

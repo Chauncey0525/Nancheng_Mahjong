@@ -4,16 +4,41 @@ const playerService = require('../services/playerService');
 
 // 注册
 router.post('/register', async (req, res) => {
+    const startTime = Date.now();
     try {
+        console.log('[路由] 收到注册请求:', JSON.stringify(req.body));
         const { username, password } = req.body;
+        
         if (!username || !password) {
-            return res.status(400).json({ error: '用户名和密码不能为空' });
+            console.log('[路由] 请求参数不完整');
+            return res.status(400).json({ 
+                success: false,
+                error: '用户名和密码不能为空' 
+            });
         }
+        
+        console.log('[路由] 开始调用playerService.register，用户名:', username);
         const player = await playerService.register(username, password);
-        res.json(player);
+        const duration = Date.now() - startTime;
+        console.log(`[路由] 注册成功，用户ID: ${player.id}，耗时: ${duration}ms`);
+        
+        res.status(201).json({
+            success: true,
+            message: '注册成功',
+            data: player
+        });
     } catch (error) {
-        console.error('注册失败:', error);
-        res.status(500).json({ error: error.message || '注册失败' });
+        const duration = Date.now() - startTime;
+        console.error(`[路由] 注册失败，耗时: ${duration}ms`);
+        console.error('[路由] 错误信息:', error.message);
+        console.error('[路由] 错误堆栈:', error.stack);
+        
+        // 如果是用户名已存在等业务错误，返回400；其他错误返回500
+        const statusCode = error.message.includes('已存在') || error.message.includes('长度') || error.message.includes('格式') ? 400 : 500;
+        res.status(statusCode).json({ 
+            success: false,
+            error: error.message || '注册失败' 
+        });
     }
 });
 
@@ -22,16 +47,29 @@ router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         if (!username || !password) {
-            return res.status(400).json({ error: '用户名和密码不能为空' });
+            return res.status(400).json({ 
+                success: false,
+                error: '用户名和密码不能为空' 
+            });
         }
         const player = await playerService.login(username, password);
         if (!player) {
-            return res.status(401).json({ error: '用户名或密码错误' });
+            return res.status(401).json({ 
+                success: false,
+                error: '用户名或密码错误' 
+            });
         }
-        res.json(player);
+        res.json({
+            success: true,
+            message: '登录成功',
+            data: player
+        });
     } catch (error) {
         console.error('登录失败:', error);
-        res.status(500).json({ error: '登录失败' });
+        res.status(500).json({ 
+            success: false,
+            error: error.message || '登录失败' 
+        });
     }
 });
 

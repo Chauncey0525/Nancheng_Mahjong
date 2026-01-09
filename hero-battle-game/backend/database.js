@@ -4,11 +4,16 @@ const path = require('path');
 const DB_PATH = path.join(__dirname, 'game.db');
 
 function getDB() {
-    return new sqlite3.Database(DB_PATH, (err) => {
+    console.log('[数据库] 创建数据库连接，路径:', DB_PATH);
+    const db = new sqlite3.Database(DB_PATH, (err) => {
         if (err) {
-            console.error('数据库连接失败:', err.message);
+            console.error('[数据库] 连接失败:', err.message);
+            console.error('[数据库] 错误详情:', err);
+        } else {
+            console.log('[数据库] 连接成功');
         }
     });
+    return db;
 }
 
 function initDatabase() {

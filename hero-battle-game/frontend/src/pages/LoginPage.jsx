@@ -28,7 +28,21 @@ function LoginPage({ onLogin }) {
                 setError('登录失败，请检查用户名和密码');
             }
         } catch (err) {
-            setError(err.response?.data?.error || err.message || '操作失败');
+            // 处理不同类型的错误
+            let errorMessage = '操作失败';
+            
+            if (err.response?.data?.error) {
+                errorMessage = err.response.data.error;
+            } else if (err.message) {
+                errorMessage = err.message;
+            } else if (err.code === 'ECONNABORTED') {
+                errorMessage = '请求超时，请检查后端服务器是否正常运行';
+            } else if (err.code === 'ERR_NETWORK') {
+                errorMessage = '无法连接到服务器，请确保后端服务已启动（http://localhost:3001）';
+            }
+            
+            setError(errorMessage);
+            console.error('登录/注册错误:', err);
         } finally {
             setLoading(false);
         }

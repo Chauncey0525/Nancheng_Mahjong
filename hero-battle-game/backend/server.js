@@ -9,6 +9,25 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// 请求日志中间件
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    if (req.body && Object.keys(req.body).length > 0) {
+        console.log('请求体:', JSON.stringify(req.body));
+    }
+    next();
+});
+
+// 错误处理中间件
+app.use((err, req, res, next) => {
+    console.error('[服务器] 未处理的错误:', err);
+    console.error('[服务器] 错误堆栈:', err.stack);
+    res.status(500).json({ 
+        success: false,
+        error: '服务器内部错误' 
+    });
+});
+
 // 导入路由
 const heroRoutes = require('./routes/heroes');
 const playerRoutes = require('./routes/players');
