@@ -5,7 +5,12 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "update-schema": "node scripts/updateHeroSchema.js",
+    "import-heroes": "node scripts/importHeroes.js",
+    "update-attributes": "node scripts/updateHeroAttributes.js",
+    "fix-heroes": "node scripts/fixAllHeroes.js",
+    "migrate": "node scripts/updateHeroSchema.js && node scripts/importHeroes.js"
   },
   "keywords": ["game", "hero", "battle"],
   "author": "Chauncey0525",

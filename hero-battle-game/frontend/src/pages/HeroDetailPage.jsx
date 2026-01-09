@@ -43,12 +43,39 @@ function HeroDetailPage({ playerId }) {
         );
     }
 
+    // 属性颜色（参考宝可梦）
     const elementColors = {
+        '普通': '#A8A878',
+        '火': '#F08030',
+        '水': '#6890F0',
+        '草': '#78C850',
+        '木': '#78C850',
+        '电': '#F8D030',
+        '冰': '#98D8D8',
+        '格斗': '#C03028',
+        '毒': '#A040A0',
+        '地面': '#E0C068',
+        '飞行': '#A890F0',
+        '超能力': '#F85888',
+        '虫': '#A8B820',
+        '岩石': '#B8A038',
+        '幽灵': '#705898',
+        '暗': '#705848',
+        '龙': '#7038F8',
+        '钢': '#B8B8D0',
         '金': '#FFD700',
-        '木': '#90EE90',
-        '水': '#87CEEB',
-        '火': '#FF6347',
-        '土': '#CD853F'
+        '土': '#D4A574'
+    };
+
+    // 角色定位颜色
+    const roleColors = {
+        '战士': '#C03028',
+        '刺客': '#705848',
+        '法师': '#F85888',
+        '治疗': '#78C850',
+        '坦克': '#B8B8D0',
+        '射手': '#F08030',
+        '辅助': '#6890F0'
     };
 
     return (
@@ -60,18 +87,21 @@ function HeroDetailPage({ playerId }) {
                     <div className="hero-avatar">
                         <div 
                             className="element-badge" 
-                            style={{ backgroundColor: elementColors[hero.hero.element] || '#999' }}
+                            style={{ backgroundColor: elementColors[hero.hero.element] || '#A8A878' }}
                         >
                             {hero.hero.element}
                         </div>
-                        <div className="star-badge">{'★'.repeat(hero.hero.star)}</div>
+                        <div 
+                            className="role-badge" 
+                            style={{ backgroundColor: roleColors[hero.hero.role] || '#999' }}
+                        >
+                            {hero.hero.role}
+                        </div>
                     </div>
                     <div className="hero-info">
                         <h2>{hero.hero.name}</h2>
-                        {hero.hero.dynasty && <p className="dynasty">{hero.hero.dynasty}</p>}
-                        {hero.hero.templeName && <p className="title">庙号: {hero.hero.templeName}</p>}
-                        {hero.hero.posthumousName && <p className="title">谥号: {hero.hero.posthumousName}</p>}
-                        {hero.hero.eraName && <p className="title">年号: {hero.hero.eraName}</p>}
+                        {hero.hero.title && <p className="title">称号: {hero.hero.title}</p>}
+                        {hero.hero.dynasty && <p className="dynasty">朝代: {hero.hero.dynasty}</p>}
                     </div>
                 </div>
                 
@@ -87,16 +117,24 @@ function HeroDetailPage({ playerId }) {
                             <span className="stat-value">{hero.stats.hp}</span>
                         </div>
                         <div className="stat-item">
-                            <span className="stat-label">攻击</span>
-                            <span className="stat-value">{hero.stats.atk}</span>
+                            <span className="stat-label">物攻</span>
+                            <span className="stat-value">{hero.stats.physAtk || hero.stats.atk || 0}</span>
                         </div>
                         <div className="stat-item">
-                            <span className="stat-label">防御</span>
-                            <span className="stat-value">{hero.stats.def}</span>
+                            <span className="stat-label">法攻</span>
+                            <span className="stat-value">{hero.stats.magicAtk || 0}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">物抗</span>
+                            <span className="stat-value">{hero.stats.physDef || hero.stats.def || 0}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">法抗</span>
+                            <span className="stat-value">{hero.stats.magicDef || 0}</span>
                         </div>
                         <div className="stat-item">
                             <span className="stat-label">速度</span>
-                            <span className="stat-value">{hero.stats.spd}</span>
+                            <span className="stat-value">{hero.stats.speed || hero.stats.spd || 0}</span>
                         </div>
                     </div>
                 </div>

@@ -7,13 +7,9 @@ async function getAllHeroes() {
     return new Promise((resolve, reject) => {
         const db = getDB();
         db.all(`
-            SELECT 
-                h.*,
-                GROUP_CONCAT(DISTINCT hs.skill_id) as skill_ids
+            SELECT *
             FROM heroes h
-            LEFT JOIN hero_skills hs ON h.id = hs.hero_id
-            GROUP BY h.id
-            ORDER BY h.star DESC, h.name ASC
+            ORDER BY h.name ASC
         `, [], (err, rows) => {
             db.close();
             if (err) {
@@ -23,19 +19,17 @@ async function getAllHeroes() {
                     id: row.id,
                     name: row.name,
                     dynasty: row.dynasty,
-                    templeName: row.temple_name,
-                    posthumousName: row.posthumous_name,
-                    eraName: row.era_name,
+                    title: row.title,
                     bio: row.bio,
-                    birthYear: row.birth_year,
-                    deathYear: row.death_year,
-                    element: row.element,
-                    star: row.star,
-                    baseHp: row.base_hp,
-                    baseAtk: row.base_atk,
-                    baseDef: row.base_def,
-                    baseSpd: row.base_spd,
-                    skillIds: row.skill_ids ? row.skill_ids.split(',').map(Number) : []
+                    element: row.element || '普通',
+                    role: row.role || '战士',
+                    baseHp: row.base_hp || 100,
+                    basePhysAtk: row.base_phys_atk || row.base_atk || 50,
+                    baseMagicAtk: row.base_magic_atk || 50,
+                    basePhysDef: row.base_phys_def || row.base_def || 50,
+                    baseMagicDef: row.base_magic_def || 50,
+                    baseSpeed: row.base_speed || row.base_spd || 50,
+                    skillIds: []
                 }));
                 resolve(heroes);
             }
@@ -50,13 +44,9 @@ async function getHeroById(heroId) {
     return new Promise((resolve, reject) => {
         const db = getDB();
         db.get(`
-            SELECT 
-                h.*,
-                GROUP_CONCAT(DISTINCT hs.skill_id) as skill_ids
+            SELECT *
             FROM heroes h
-            LEFT JOIN hero_skills hs ON h.id = hs.hero_id
             WHERE h.id = ?
-            GROUP BY h.id
         `, [heroId], (err, row) => {
             db.close();
             if (err) {
@@ -68,19 +58,18 @@ async function getHeroById(heroId) {
                     id: row.id,
                     name: row.name,
                     dynasty: row.dynasty,
-                    templeName: row.temple_name,
-                    posthumousName: row.posthumous_name,
-                    eraName: row.era_name,
+                    title: row.title,
                     bio: row.bio,
-                    birthYear: row.birth_year,
-                    deathYear: row.death_year,
-                    element: row.element,
-                    star: row.star,
-                    baseHp: row.base_hp,
-                    baseAtk: row.base_atk,
-                    baseDef: row.base_def,
-                    baseSpd: row.base_spd,
-                    skillIds: row.skill_ids ? row.skill_ids.split(',').map(Number) : []
+                    gender: row.gender || '男',
+                    element: row.element || '普通',
+                    role: row.role || '战士',
+                    baseHp: row.base_hp || 100,
+                    basePhysAtk: row.base_phys_atk || row.base_atk || 50,
+                    baseMagicAtk: row.base_magic_atk || 50,
+                    basePhysDef: row.base_phys_def || row.base_def || 50,
+                    baseMagicDef: row.base_magic_def || 50,
+                    baseSpeed: row.base_speed || row.base_spd || 50,
+                    skillIds: []
                 });
             }
         });
@@ -95,18 +84,13 @@ async function searchHeroes(query) {
         const db = getDB();
         const searchTerm = `%${query}%`;
         db.all(`
-            SELECT 
-                h.*,
-                GROUP_CONCAT(DISTINCT hs.skill_id) as skill_ids
+            SELECT *
             FROM heroes h
-            LEFT JOIN hero_skills hs ON h.id = hs.hero_id
             WHERE h.name LIKE ? 
-               OR h.temple_name LIKE ? 
-               OR h.posthumous_name LIKE ? 
-               OR h.era_name LIKE ?
-            GROUP BY h.id
-            ORDER BY h.star DESC, h.name ASC
-        `, [searchTerm, searchTerm, searchTerm, searchTerm], (err, rows) => {
+               OR h.title LIKE ?
+               OR h.dynasty LIKE ?
+            ORDER BY h.name ASC
+        `, [searchTerm, searchTerm, searchTerm], (err, rows) => {
             db.close();
             if (err) {
                 reject(err);
@@ -115,19 +99,17 @@ async function searchHeroes(query) {
                     id: row.id,
                     name: row.name,
                     dynasty: row.dynasty,
-                    templeName: row.temple_name,
-                    posthumousName: row.posthumous_name,
-                    eraName: row.era_name,
+                    title: row.title,
                     bio: row.bio,
-                    birthYear: row.birth_year,
-                    deathYear: row.death_year,
-                    element: row.element,
-                    star: row.star,
-                    baseHp: row.base_hp,
-                    baseAtk: row.base_atk,
-                    baseDef: row.base_def,
-                    baseSpd: row.base_spd,
-                    skillIds: row.skill_ids ? row.skill_ids.split(',').map(Number) : []
+                    element: row.element || '普通',
+                    role: row.role || '战士',
+                    baseHp: row.base_hp || 100,
+                    basePhysAtk: row.base_phys_atk || row.base_atk || 50,
+                    baseMagicAtk: row.base_magic_atk || 50,
+                    basePhysDef: row.base_phys_def || row.base_def || 50,
+                    baseMagicDef: row.base_magic_def || 50,
+                    baseSpeed: row.base_speed || row.base_spd || 50,
+                    skillIds: []
                 }));
                 resolve(heroes);
             }
@@ -144,9 +126,11 @@ function calculateHeroStats(hero, level) {
     
     return {
         hp: Math.floor(hero.baseHp * levelMultiplier),
-        atk: Math.floor(hero.baseAtk * levelMultiplier),
-        def: Math.floor(hero.baseDef * levelMultiplier),
-        spd: Math.floor(hero.baseSpd * levelMultiplier)
+        physAtk: Math.floor(hero.basePhysAtk * levelMultiplier),
+        magicAtk: Math.floor(hero.baseMagicAtk * levelMultiplier),
+        physDef: Math.floor(hero.basePhysDef * levelMultiplier),
+        magicDef: Math.floor(hero.baseMagicDef * levelMultiplier),
+        speed: Math.floor(hero.baseSpeed * levelMultiplier)
     };
 }
 

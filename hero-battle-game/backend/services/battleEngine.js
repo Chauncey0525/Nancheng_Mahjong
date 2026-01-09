@@ -2,35 +2,20 @@
  * 战斗引擎核心逻辑
  */
 
-// 五行相克关系：key克制value数组中的元素
-const ELEMENT_WEAKNESS = {
-    '金': ['木'],
-    '木': ['土'],
-    '土': ['水'],
-    '水': ['火'],
-    '火': ['金']
-};
+const { calculateElementMultiplier } = require('./elementSystem');
 
 /**
- * 计算属性相克倍率
+ * 计算伤害（支持物理和魔法攻击）
  */
-function calculateElementMultiplier(attackerElement, defenderElement) {
-    if (ELEMENT_WEAKNESS[attackerElement] && ELEMENT_WEAKNESS[attackerElement].includes(defenderElement)) {
-        return 1.5; // 克制时伤害增加50%
-    }
-    if (ELEMENT_WEAKNESS[defenderElement] && ELEMENT_WEAKNESS[defenderElement].includes(attackerElement)) {
-        return 0.75; // 被克制时伤害减少25%
-    }
-    return 1.0; // 无相克关系
-}
-
-/**
- * 计算伤害
- */
-function calculateDamage(attacker, defender, skillMultiplier = 1.0) {
+function calculateDamage(attacker, defender, skillMultiplier = 1.0, isPhysical = true) {
     const elementMultiplier = calculateElementMultiplier(attacker.element, defender.element);
-    const baseDamage = attacker.stats.atk * skillMultiplier;
-    const defenseReduction = defender.stats.def * 0.5; // 防御减伤
+    
+    // 根据攻击类型选择攻击力和防御力
+    const attackStat = isPhysical ? attacker.stats.physAtk : attacker.stats.magicAtk;
+    const defenseStat = isPhysical ? defender.stats.physDef : defender.stats.magicDef;
+    
+    const baseDamage = attackStat * skillMultiplier;
+    const defenseReduction = defenseStat * 0.5; // 防御减伤
     const finalDamage = Math.max(1, Math.floor((baseDamage - defenseReduction) * elementMultiplier));
     return finalDamage;
 }
@@ -73,7 +58,7 @@ function initializeBattle(battle) {
  */
 function generateTurnOrder(units, playerUnits) {
     return units
-        .map((unit, index) => ({ unit, index, speed: unit.stats.spd }))
+        .map((unit, index) => ({ unit, index, speed: unit.stats.speed || unit.stats.spd }))
         .sort((a, b) => b.speed - a.speed)
         .map(item => ({
             unit: item.unit,

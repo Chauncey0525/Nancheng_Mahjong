@@ -292,21 +292,22 @@ async function getPlayerHeroes(playerId) {
                 ph.level,
                 ph.exp,
                 ph.hp,
-                ph.atk,
-                ph.def,
-                ph.spd,
+                ph.phys_atk,
+                ph.magic_atk,
+                ph.phys_def,
+                ph.magic_def,
+                ph.speed,
                 h.name,
                 h.element,
-                h.star,
+                h.role,
                 h.dynasty,
-                h.temple_name as templeName,
-                h.posthumous_name as posthumousName,
-                h.era_name as eraName,
+                h.title,
+                h.gender,
                 h.bio
             FROM player_heroes ph
             JOIN heroes h ON ph.hero_id = h.id
             WHERE ph.player_id = ?
-            ORDER BY ph.level DESC, h.star DESC
+            ORDER BY ph.level DESC, h.name ASC
         `, [playerId], (err, rows) => {
             db.close();
             if (err) {
@@ -320,19 +321,20 @@ async function getPlayerHeroes(playerId) {
                     exp: row.exp,
                     stats: {
                         hp: row.hp,
-                        atk: row.atk,
-                        def: row.def,
-                        spd: row.spd
+                        physAtk: row.phys_atk || row.atk || 50,
+                        magicAtk: row.magic_atk || 50,
+                        physDef: row.phys_def || row.def || 50,
+                        magicDef: row.magic_def || 50,
+                        speed: row.speed || row.spd || 50
                     },
                     hero: {
                         id: row.heroId,
                         name: row.name,
-                        element: row.element,
-                        star: row.star,
+                        element: row.element || '普通',
+                        role: row.role || '战士',
                         dynasty: row.dynasty,
-                        templeName: row.templeName,
-                        posthumousName: row.posthumousName,
-                        eraName: row.eraName,
+                        title: row.title,
+                        gender: row.gender || '男',
                         bio: row.bio
                     }
                 }));
@@ -374,9 +376,9 @@ async function addHeroToPlayer(playerId, heroId, level = 1) {
                 
                 // 添加英雄
                 db.run(
-                    `INSERT INTO player_heroes (player_id, hero_id, level, exp, hp, atk, def, spd) 
-                     VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
-                    [playerId, heroId, level, stats.hp, stats.atk, stats.def, stats.spd],
+                    `INSERT INTO player_heroes (player_id, hero_id, level, exp, hp, phys_atk, magic_atk, phys_def, magic_def, speed) 
+                     VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
+                    [playerId, heroId, level, stats.hp, stats.physAtk, stats.magicAtk, stats.physDef, stats.magicDef, stats.speed],
                     function(insertErr) {
                         db.close();
                         if (insertErr) {
