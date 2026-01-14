@@ -42,8 +42,8 @@
       <view class="history-results">
         <view class="result-mini" wx:for="{{item.results}}" wx:key="playerIndex" wx:for-item="result">
           <text class="result-mini-name">{{result.playerName}}</text>
-          <text class="result-mini-score {{result.totalScore >= 0 ? 'positive' : 'negative'}}">
-            {{result.totalScore >= 0 ? '+' : ''}}{{result.totalScore}}
+          <text class="result-mini-score {{(result.subTotalScore !== undefined ? result.subTotalScore : result.totalScore) >= 0 ? 'positive' : 'negative'}}">
+            {{(result.subTotalScore !== undefined ? result.subTotalScore : result.totalScore) >= 0 ? '+' : ''}}{{result.subTotalScore !== undefined ? result.subTotalScore : result.totalScore}}
           </text>
         </view>
       </view>
@@ -106,8 +106,8 @@
         <view class="detail-title">得分结果</view>
         <view class="detail-item" wx:for="{{currentDetail.results}}" wx:key="playerIndex">
           <text>{{item.playerName}}</text>
-          <text class="{{item.totalScore >= 0 ? 'positive' : 'negative'}}">
-            {{item.totalScore >= 0 ? '+' : ''}}{{item.totalScore}}分
+          <text class="{{(item.subTotalScore !== undefined ? item.subTotalScore : item.totalScore) >= 0 ? 'positive' : 'negative'}}">
+            {{(item.subTotalScore !== undefined ? item.subTotalScore : item.totalScore) >= 0 ? '+' : ''}}{{item.subTotalScore !== undefined ? item.subTotalScore : item.totalScore}}分
           </text>
         </view>
       </view>

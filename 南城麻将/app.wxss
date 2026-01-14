@@ -62,6 +62,8 @@ page {
 /* 输入框样式 */
 .input-group {
   margin-bottom: 30rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .input-label {
@@ -73,11 +75,19 @@ page {
 
 .input {
   width: 100%;
-  padding: 20rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  padding: 0 20rpx;
   border: 2rpx solid #E0E0E0;
   border-radius: 8rpx;
   font-size: 32rpx;
   box-sizing: border-box;
+  text-align: left;
+  min-width: 0;
+  overflow: visible;
+  display: block;
+  word-break: normal;
+  white-space: normal;
 }
 
 .input:focus {

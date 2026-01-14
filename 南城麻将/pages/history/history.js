@@ -43,12 +43,14 @@ Page({
       };
     });
 
-    // 累加每局得分
+    // 累加每局得分（使用subTotalScore，如果没有则使用totalScore以兼容旧数据）
     history.forEach(record => {
       if (record.results && record.results.length > 0) {
         record.results.forEach(result => {
           if (scores[result.playerIndex]) {
-            scores[result.playerIndex].totalScore += result.totalScore;
+            // 使用subTotalScore显示，如果没有则使用totalScore（向后兼容）
+            const score = result.subTotalScore !== undefined ? result.subTotalScore : result.totalScore;
+            scores[result.playerIndex].totalScore += score;
           }
         });
       }

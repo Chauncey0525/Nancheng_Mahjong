@@ -95,21 +95,32 @@ function calculateGangScore(gangInfo, players) {
 
     if (type === '点杠') {
       // 点杠：点杠者2分，庄家翻倍4分，其余玩家1分
+      // 注意：如果杠的玩家是庄家，点杠者和其他玩家都要翻倍（庄家没有奇数）
       if (pointGangIndex >= 0 && pointGangIndex < players.length) {
         const pointGangPlayer = players[pointGangIndex];
         let pointGangScore = config.GANG_SCORES['点杠'].pointGang;
+        // 如果点杠者是庄家，翻倍
         if (pointGangPlayer.isDealer) {
+          pointGangScore = config.GANG_SCORES['点杠'].dealer;
+        }
+        // 如果杠的玩家是庄家，点杠者也要翻倍
+        else if (gangPlayer.isDealer) {
           pointGangScore = config.GANG_SCORES['点杠'].dealer;
         }
         scores[`${pointGangIndex}_${playerIndex}`] = pointGangScore;
       }
 
-      // 其余玩家各1分
+      // 其余玩家各1分，但如果杠的玩家是庄家，翻倍为2分
       players.forEach((player, idx) => {
         if (idx !== playerIndex && idx !== pointGangIndex) {
           let score = config.GANG_SCORES['点杠'].others;
+          // 如果其他玩家是庄家，翻倍
           if (player.isDealer) {
             score = config.GANG_SCORES['点杠'].dealer;
+          }
+          // 如果杠的玩家是庄家，其他玩家也要翻倍（庄家没有奇数）
+          else if (gangPlayer.isDealer) {
+            score = config.GANG_SCORES['点杠'].others * 2; // 1分翻倍为2分
           }
           scores[`${idx}_${playerIndex}`] = score;
         }
@@ -131,53 +142,6 @@ function calculateGangScore(gangInfo, players) {
   return scores;
 }
 
-/**
- * 计算玩家A对玩家B的得分（买码规则）
- * 规则：(胡分+杠分) × 对方码数
- * 注意：如果玩家A需要支付给玩家B，baseScore为正数；如果玩家B需要支付给玩家A，baseScore为负数
- * @param {number} playerAIndex - 玩家A索引
- * @param {number} playerBIndex - 玩家B索引
- * @param {Object} winScores - 胡分对象，格式：{from_to: score}
- * @param {Object} gangScores - 杠分对象，格式：{from_to: score}
- * @param {Array} players - 玩家数组
- * @returns {number} 得分（对玩家A来说，正数表示获得，负数表示支付）
- */
-function calculateScoreBetweenPlayers(playerAIndex, playerBIndex, winScores, gangScores, players) {
-  const playerA = players[playerAIndex];
-  const playerB = players[playerBIndex];
-  if (!playerA || !playerB) return 0;
-
-  // 计算玩家A对玩家B的基础分数（胡分+杠分）
-  // 如果玩家A需要支付给玩家B，分数为正；如果玩家B需要支付给玩家A，分数为负
-  let baseScore = 0;
-
-  // 累加所有玩家A需要支付给玩家B的胡分（正数表示支付）
-  Object.keys(winScores).forEach(key => {
-    const [from, to] = key.split('_').map(Number);
-    if (from === playerAIndex && to === playerBIndex) {
-      baseScore += winScores[key]; // 玩家A支付给玩家B，为正数
-    } else if (from === playerBIndex && to === playerAIndex) {
-      baseScore -= winScores[key]; // 玩家B支付给玩家A，为负数（对玩家A来说是获得）
-    }
-  });
-
-  // 累加所有玩家A需要支付给玩家B的杠分
-  Object.keys(gangScores).forEach(key => {
-    const [from, to] = key.split('_').map(Number);
-    if (from === playerAIndex && to === playerBIndex) {
-      baseScore += gangScores[key]; // 玩家A支付给玩家B，为正数
-    } else if (from === playerBIndex && to === playerAIndex) {
-      baseScore -= gangScores[key]; // 玩家B支付给玩家A，为负数（对玩家A来说是获得）
-    }
-  });
-
-  // 买码规则：(胡分+杠分) × 对方码数
-  // baseScore为正数表示玩家A需要支付给玩家B，乘以玩家B的码数后仍为正数（对玩家A来说是支付）
-  // baseScore为负数表示玩家B需要支付给玩家A，乘以玩家B的码数后为负数（对玩家A来说是获得）
-  const finalScore = baseScore * (playerB.ma || 0);
-
-  return finalScore;
-}
 
 /**
  * 计算所有玩家的得分
@@ -209,33 +173,54 @@ function calculateAllScores(gameData) {
     const details = [];
 
     // 对每个其他玩家计算得分
+    // 根据买码规则：每个方位计算与其他三家的正负得分
+    // 第一步：计算玩家A对玩家B的得分 = (胡分+杠分) × 对方码数
+    // 第二步：玩家A的最终得分 = (玩家A对所有其他玩家的得分之和) × 玩家A自己的码数
+    let subTotalScore = 0; // 玩家A对所有其他玩家的得分之和（未乘以自己码数）
+    
     players.forEach((otherPlayer, otherIndex) => {
       if (playerIndex !== otherIndex) {
-        const score = calculateScoreBetweenPlayers(
-          playerIndex,
-          otherIndex,
-          winScores,
-          gangScores,
-          players
-        );
-        totalScore += score;
+        // 计算玩家A对玩家B的净支付（胡分+杠分）
+        let baseScore = 0;
+        // 玩家A需要支付给玩家B的（对玩家A来说是支付，为负数）
+        baseScore -= (winScores[`${playerIndex}_${otherIndex}`] || 0);
+        baseScore -= (gangScores[`${playerIndex}_${otherIndex}`] || 0);
+        // 玩家B需要支付给玩家A的（对玩家A来说是获得，为正数）
+        baseScore += (winScores[`${otherIndex}_${playerIndex}`] || 0);
+        baseScore += (gangScores[`${otherIndex}_${playerIndex}`] || 0);
+        
+        // 买码规则第一步：(胡分+杠分) × (1 + 对方码数)
+        // 基础倍数为1，每有1只码是多一倍
+        // 比如有1只码，则分数是*2，有2只码分数*3...以此类推
+        const multiplier = 1 + (otherPlayer.ma || 0);
+        const score = baseScore * multiplier;
+        subTotalScore += score;
         
         if (score !== 0) {
           details.push({
             targetIndex: otherIndex,
             targetName: otherPlayer.name,
             score: score,
-            baseScore: (winScores[`${playerIndex}_${otherIndex}`] || 0) + (gangScores[`${playerIndex}_${otherIndex}`] || 0),
-            ma: otherPlayer.ma || 0
+            baseScore: baseScore,
+            ma: otherPlayer.ma || 0,
+            multiplier: multiplier
           });
         }
       }
     });
+    
+    // 买码规则第二步：玩家A的最终得分 = (玩家A对所有其他玩家的得分之和) × (1 + 玩家A自己的码数)
+    // 基础倍数为1，每有1只码是多一倍
+    const playerMultiplier = 1 + (player.ma || 0);
+    totalScore = subTotalScore * playerMultiplier;
 
     results.push({
       playerIndex: playerIndex,
       playerName: player.name,
-      totalScore: totalScore,
+      totalScore: totalScore,  // 用于验证：totalScore * (1 + player.ma) 求和为0
+      subTotalScore: subTotalScore,  // 显示用：未乘本方码数的分数
+      playerMa: player.ma || 0,
+      playerMultiplier: playerMultiplier,
       details: details
     });
 
@@ -243,6 +228,9 @@ function calculateAllScores(gameData) {
       playerIndex: playerIndex,
       playerName: player.name,
       totalScore: totalScore,
+      subTotalScore: subTotalScore,
+      playerMa: player.ma || 0,
+      playerMultiplier: playerMultiplier,
       winScores: winScores,
       gangScores: gangScores,
       details: details
@@ -260,6 +248,5 @@ function calculateAllScores(gameData) {
 module.exports = {
   calculateWinScore,
   calculateGangScore,
-  calculateScoreBetweenPlayers,
   calculateAllScores
 };

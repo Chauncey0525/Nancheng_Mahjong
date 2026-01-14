@@ -10,12 +10,16 @@
   background-color: #F8F9FA;
   border-radius: 8rpx;
   border: 2rpx solid #E0E0E0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .player-header {
   display: flex;
   align-items: center;
   margin-bottom: 20rpx;
+  justify-content: space-between;
 }
 
 .player-name {
@@ -23,15 +27,31 @@
   font-weight: bold;
   color: #333;
   flex: 1;
+  min-width: 0;
 }
 
 .dealer-switch {
   margin-right: 10rpx;
+  flex-shrink: 0;
 }
 
 .dealer-label {
   font-size: 28rpx;
   color: #666;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.ma-input {
+  width: 100% !important;
+  height: 80rpx !important;
+  line-height: 80rpx !important;
+  box-sizing: border-box !important;
+  padding: 0 20rpx !important;
+  min-width: 0 !important;
+  display: block !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 
 .radio-group {

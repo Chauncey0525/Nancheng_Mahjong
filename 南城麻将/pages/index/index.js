@@ -11,12 +11,13 @@ Page({
       { name: '北方', position: 'north', ma: 0, isDealer: false }
     ],
     playerNames: [
+      { name: '无', index: -1 },
       { name: '东方', index: 0 },
       { name: '南方', index: 1 },
       { name: '西方', index: 2 },
       { name: '北方', index: 3 }
     ],
-    winTypes: config.WIN_TYPES,
+    winTypes: ['无', ...config.WIN_TYPES],
     winTypeIndex: 0,
     winInfo: {
       winnerIndex: -1,
@@ -59,10 +60,17 @@ Page({
   onWinnerChange(e) {
     const index = parseInt(e.detail.value);
     const winInfo = this.data.winInfo;
-    winInfo.winnerIndex = index;
-    // 如果是一炮多响，需要更新winnerIndices
-    if (winInfo.winnerIndices.length === 0) {
-      winInfo.winnerIndices = [index];
+    // 如果选择的是"无"（index 0），则设置为 -1
+    if (index === 0) {
+      winInfo.winnerIndex = -1;
+      winInfo.winnerIndices = [];
+    } else {
+      // 实际玩家索引需要减1（因为第一个是"无"）
+      winInfo.winnerIndex = index - 1;
+      // 如果是一炮多响，需要更新winnerIndices
+      if (winInfo.winnerIndices.length === 0) {
+        winInfo.winnerIndices = [index - 1];
+      }
     }
     this.setData({ winInfo });
   },
@@ -71,7 +79,13 @@ Page({
   onWinTypeChange(e) {
     const index = parseInt(e.detail.value);
     const winInfo = this.data.winInfo;
-    winInfo.winType = this.data.winTypes[index];
+    // 如果选择的是"无"（index 0），则清空
+    if (index === 0) {
+      winInfo.winType = '';
+    } else {
+      // 实际类型索引需要减1（因为第一个是"无"）
+      winInfo.winType = config.WIN_TYPES[index - 1];
+    }
     this.setData({ 
       winTypeIndex: index,
       winInfo 
@@ -94,10 +108,16 @@ Page({
   onShooterChange(e) {
     const index = parseInt(e.detail.value);
     const winInfo = this.data.winInfo;
-    winInfo.shooterIndex = index;
-    // 更新一炮多响的选项，排除点炮者
-    if (winInfo.winnerIndices.indexOf(index) > -1) {
-      winInfo.winnerIndices = winInfo.winnerIndices.filter(i => i !== index);
+    // 如果选择的是"无"（index 0），则设置为 -1
+    if (index === 0) {
+      winInfo.shooterIndex = -1;
+    } else {
+      // 实际玩家索引需要减1（因为第一个是"无"）
+      winInfo.shooterIndex = index - 1;
+      // 更新一炮多响的选项，排除点炮者
+      if (winInfo.winnerIndices.indexOf(index - 1) > -1) {
+        winInfo.winnerIndices = winInfo.winnerIndices.filter(i => i !== (index - 1));
+      }
     }
     this.setData({ winInfo });
   },

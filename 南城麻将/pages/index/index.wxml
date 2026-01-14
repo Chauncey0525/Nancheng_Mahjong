@@ -12,7 +12,7 @@
         </view>
         <view class="input-group">
           <text class="input-label">码数</text>
-          <input class="input" type="number" value="{{item.ma}}" placeholder="请输入码数" 
+          <input class="input ma-input" type="number" value="{{item.ma}}" placeholder="请输入码数" 
                  bindinput="onMaInput" data-index="{{index}}"/>
         </view>
       </view>
@@ -25,16 +25,16 @@
     
     <view class="input-group">
       <text class="input-label">胡牌者</text>
-      <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{winInfo.winnerIndex}}" 
+      <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{winInfo.winnerIndex >= 0 ? winInfo.winnerIndex + 1 : 0}}" 
               bindchange="onWinnerChange">
-        <view class="picker">{{winInfo.winnerIndex >= 0 ? playerNames[winInfo.winnerIndex].name : '请选择胡牌者'}}</view>
+        <view class="picker">{{winInfo.winnerIndex >= 0 ? playerNames[winInfo.winnerIndex + 1].name : '无'}}</view>
       </picker>
     </view>
 
     <view class="input-group">
       <text class="input-label">胡牌类型</text>
       <picker mode="selector" range="{{winTypes}}" value="{{winTypeIndex}}" bindchange="onWinTypeChange">
-        <view class="picker">{{winTypes[winTypeIndex] || '请选择胡牌类型'}}</view>
+        <view class="picker">{{winTypes[winTypeIndex]}}</view>
       </picker>
     </view>
 
@@ -52,9 +52,9 @@
 
     <view class="input-group" wx:if="{{!winInfo.isSelfDraw}}">
       <text class="input-label">点炮者</text>
-      <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{winInfo.shooterIndex}}" 
+      <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{winInfo.shooterIndex >= 0 ? winInfo.shooterIndex + 1 : 0}}" 
               bindchange="onShooterChange">
-        <view class="picker">{{winInfo.shooterIndex >= 0 ? playerNames[winInfo.shooterIndex].name : '请选择点炮者'}}</view>
+        <view class="picker">{{winInfo.shooterIndex >= 0 ? playerNames[winInfo.shooterIndex + 1].name : '无'}}</view>
       </picker>
     </view>
 
@@ -113,14 +113,14 @@
       <view class="result-item" wx:for="{{results}}" wx:key="playerIndex">
         <view class="result-header">
           <text class="result-label">{{item.playerName}}</text>
-          <text class="result-value {{item.totalScore >= 0 ? 'positive' : 'negative'}}">
-            {{item.totalScore >= 0 ? '+' : ''}}{{item.totalScore}}分
+          <text class="result-value {{item.subTotalScore >= 0 ? 'positive' : 'negative'}}">
+            {{item.subTotalScore >= 0 ? '+' : ''}}{{item.subTotalScore}}分
           </text>
         </view>
         <view class="result-details" wx:if="{{item.details.length > 0}}">
           <view class="detail-item" wx:for="{{item.details}}" wx:key="targetIndex" wx:for-item="detail">
             <text class="detail-text">{{detail.targetName}}: {{detail.score >= 0 ? '+' : ''}}{{detail.score}}分</text>
-            <text class="detail-note">(基础:{{detail.baseScore}}, 码:{{detail.ma}})</text>
+            <text class="detail-note">(基础:{{detail.baseScore}}, 码:{{detail.ma}}, 倍数:{{detail.multiplier || (1 + detail.ma)}})</text>
           </view>
         </view>
       </view>
