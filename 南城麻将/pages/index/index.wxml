@@ -24,21 +24,22 @@
     <view class="card-title">胡牌信息</view>
     
     <view class="input-group">
-      <text class="input-label">胡牌者</text>
-      <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{winInfo.winnerIndex >= 0 ? winInfo.winnerIndex + 1 : 0}}" 
-              bindchange="onWinnerChange">
-        <view class="picker">{{winInfo.winnerIndex >= 0 ? playerNames[winInfo.winnerIndex + 1].name : '无'}}</view>
-      </picker>
+      <view class="draw-game-container">
+        <text class="input-label">荒庄（流局）</text>
+        <switch checked="{{winInfo.isDrawGame}}" bindchange="onDrawGameChange" class="draw-game-switch"/>
+        <text class="draw-game-label">不计算胡牌分，只计算杠分和码</text>
+      </view>
+    </view>
+    
+    <view class="input-group" wx:if="{{!winInfo.isDrawGame}}">
+      <view class="draw-game-container">
+        <text class="input-label">一炮多响</text>
+        <switch checked="{{winInfo.isMultiWin}}" bindchange="onMultiWinToggle" class="draw-game-switch"/>
+        <text class="draw-game-label">多人同时胡牌</text>
+      </view>
     </view>
 
-    <view class="input-group">
-      <text class="input-label">胡牌类型</text>
-      <picker mode="selector" range="{{winTypes}}" value="{{winTypeIndex}}" bindchange="onWinTypeChange">
-        <view class="picker">{{winTypes[winTypeIndex]}}</view>
-      </picker>
-    </view>
-
-    <view class="input-group">
+    <view class="input-group" wx:if="{{!winInfo.isDrawGame}}">
       <text class="input-label">胡牌方式</text>
       <radio-group class="radio-group" bindchange="onWinMethodChange">
         <label class="radio-item">
@@ -50,7 +51,7 @@
       </radio-group>
     </view>
 
-    <view class="input-group" wx:if="{{!winInfo.isSelfDraw}}">
+    <view class="input-group" wx:if="{{!winInfo.isDrawGame && !winInfo.isSelfDraw}}">
       <text class="input-label">点炮者</text>
       <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{winInfo.shooterIndex >= 0 ? winInfo.shooterIndex + 1 : 0}}" 
               bindchange="onShooterChange">
@@ -58,16 +59,45 @@
       </picker>
     </view>
 
-    <view class="input-group" wx:if="{{!winInfo.isSelfDraw && winInfo.shooterIndex >= 0}}">
-      <text class="input-label">一炮多响（可多选）</text>
-      <checkbox-group bindchange="onMultiWinChange">
-        <view class="checkbox-list">
-          <label class="checkbox-item" wx:for="{{players}}" wx:key="index" wx:if="{{index != winInfo.shooterIndex}}">
-            <checkbox value="{{index}}" checked="{{winInfo.winnerIndices.indexOf(index) > -1}}"/>
-            <text>{{item.name}}</text>
-          </label>
+    <!-- 非一炮多响模式：单个胡牌者 -->
+    <view wx:if="{{!winInfo.isDrawGame && !winInfo.isMultiWin}}">
+      <view class="input-group">
+        <text class="input-label">胡牌者</text>
+        <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{winInfo.winners[0] && winInfo.winners[0].playerIndex >= 0 ? winInfo.winners[0].playerIndex + 1 : 0}}" 
+                bindchange="onWinnerSelect" data-winner-index="0">
+          <view class="picker">{{winInfo.winners[0] && winInfo.winners[0].playerIndex >= 0 ? playerNames[winInfo.winners[0].playerIndex + 1].name : '无'}}</view>
+        </picker>
+      </view>
+
+      <view class="input-group">
+        <text class="input-label">胡牌类型</text>
+        <picker mode="selector" range="{{winTypes}}" value="{{winInfo.winners[0] && winInfo.winners[0].winType ? (winTypes.indexOf(winInfo.winners[0].winType) >= 0 ? winTypes.indexOf(winInfo.winners[0].winType) : 0) : 0}}" 
+                bindchange="onWinTypeSelect" data-winner-index="0">
+          <view class="picker">{{winInfo.winners[0] && winInfo.winners[0].winType ? winInfo.winners[0].winType : '无'}}</view>
+        </picker>
+      </view>
+    </view>
+
+    <!-- 一炮多响模式：多个胡牌者 -->
+    <view wx:if="{{!winInfo.isDrawGame && winInfo.isMultiWin && !winInfo.isSelfDraw}}">
+      <view wx:for="{{winInfo.winners}}" wx:key="index" wx:for-item="winner" wx:for-index="winnerIndex">
+        <view class="input-group">
+          <text class="winner-label">胡牌者{{winnerIndex + 1}}<text wx:if="{{winnerIndex > 0}}" style="color: #999; font-size: 24rpx;">（可选）</text></text>
+          <picker mode="selector" range="{{playerNames}}" range-key="name" 
+                  value="{{winner.playerIndex >= 0 ? winner.playerIndex + 1 : 0}}" 
+                  bindchange="onWinnerSelect" data-winner-index="{{winnerIndex}}">
+            <view class="picker">{{winner.playerIndex >= 0 ? playerNames[winner.playerIndex + 1].name : '无'}}</view>
+          </picker>
         </view>
-      </checkbox-group>
+        <view class="input-group">
+          <text class="winner-label">胡牌类型{{winnerIndex + 1}}<text wx:if="{{winnerIndex > 0}}" style="color: #999; font-size: 24rpx;">（可选）</text></text>
+          <picker mode="selector" range="{{winTypes}}" 
+                  value="{{winner.winType ? (winTypes.indexOf(winner.winType) >= 0 ? winTypes.indexOf(winner.winType) : 0) : 0}}" 
+                  bindchange="onWinTypeSelect" data-winner-index="{{winnerIndex}}">
+            <view class="picker">{{winner.winType || '无'}}</view>
+          </picker>
+        </view>
+      </view>
     </view>
   </view>
 
@@ -88,14 +118,14 @@
           </picker>
         </view>
         <view class="input-group">
-          <text class="input-label">杠的玩家</text>
+          <text class="input-label">捡杠者</text>
           <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{item.playerIndex}}" 
                   bindchange="onGangPlayerChange" data-gang-index="{{index}}">
             <view class="picker">{{item.playerIndex >= 0 ? playerNames[item.playerIndex].name : '请选择'}}</view>
           </picker>
         </view>
         <view class="input-group" wx:if="{{item.type === '点杠'}}">
-          <text class="input-label">点杠者</text>
+          <text class="input-label">放杠者</text>
           <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{item.pointGangIndex}}" 
                   bindchange="onPointGangChange" data-gang-index="{{index}}">
             <view class="picker">{{item.pointGangIndex >= 0 ? playerNames[item.pointGangIndex].name : '请选择'}}</view>

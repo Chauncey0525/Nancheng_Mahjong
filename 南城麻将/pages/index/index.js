@@ -20,11 +20,11 @@ Page({
     winTypes: ['无', ...config.WIN_TYPES],
     winTypeIndex: 0,
     winInfo: {
-      winnerIndex: -1,
-      winType: '',
+      isMultiWin: false,  // 是否一炮多响
+      winners: [{ playerIndex: -1, winType: '' }],  // 胡牌者列表 [{playerIndex: -1, winType: ''}, ...]
       isSelfDraw: true,
       shooterIndex: -1,
-      winnerIndices: []
+      isDrawGame: false  // 荒庄（流局）标志
     },
     gangTypes: ['点杠', '暗杠'],
     gangInfo: [],
@@ -56,6 +56,111 @@ Page({
     this.setData({ players });
   },
 
+  // 荒庄切换
+  onDrawGameChange(e) {
+    const checked = e.detail.value;
+    const winInfo = this.data.winInfo;
+    winInfo.isDrawGame = checked;
+    // 如果开启荒庄，清空胡牌相关信息
+    if (checked) {
+      winInfo.winners = [];
+      winInfo.shooterIndex = -1;
+      winInfo.isMultiWin = false;
+    }
+    this.setData({ winInfo });
+  },
+
+  // 一炮多响切换
+  onMultiWinToggle(e) {
+    const checked = e.detail.value;
+    const winInfo = this.data.winInfo;
+    winInfo.isMultiWin = checked;
+    
+    if (checked) {
+      // 开启一炮多响，自动设置为点炮模式（自摸没有一炮多响）
+      winInfo.isSelfDraw = false;
+      // 初始化3个胡牌者
+      winInfo.winners = [
+        { playerIndex: -1, winType: '' },
+        { playerIndex: -1, winType: '' },
+        { playerIndex: -1, winType: '' }
+      ];
+    } else {
+      // 关闭一炮多响，只保留第一个
+      if (winInfo.winners.length > 0) {
+        winInfo.winners = [winInfo.winners[0]];
+      } else {
+        winInfo.winners = [{ playerIndex: -1, winType: '' }];
+      }
+    }
+    this.setData({ winInfo });
+  },
+
+  // 胡牌者选择（一炮多响模式）
+  onWinnerSelect(e) {
+    const winnerIndex = parseInt(e.currentTarget.dataset.winnerIndex);
+    const playerIndex = parseInt(e.detail.value);
+    const winInfo = this.data.winInfo;
+    
+    if (!winInfo.winners[winnerIndex]) {
+      winInfo.winners[winnerIndex] = { playerIndex: -1, winType: '' };
+    }
+    
+    if (playerIndex === 0) {
+      winInfo.winners[winnerIndex].playerIndex = -1;
+      winInfo.winners[winnerIndex].winType = '';
+    } else {
+      const selectedPlayerIndex = playerIndex - 1;
+      
+      // 如果选择了点炮者，不允许
+      if (!winInfo.isSelfDraw && selectedPlayerIndex === winInfo.shooterIndex) {
+        wx.showToast({
+          title: '胡牌者不能是点炮者',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // 检查是否与其他胡牌者重复
+      let isDuplicate = false;
+      for (let i = 0; i < winInfo.winners.length; i++) {
+        if (i !== winnerIndex && winInfo.winners[i].playerIndex === selectedPlayerIndex) {
+          isDuplicate = true;
+          break;
+        }
+      }
+      
+      if (isDuplicate) {
+        wx.showToast({
+          title: '胡牌者不能重复，请选择不同的玩家',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      winInfo.winners[winnerIndex].playerIndex = selectedPlayerIndex;
+    }
+    this.setData({ winInfo });
+  },
+
+  // 胡牌类型选择（一炮多响模式）
+  onWinTypeSelect(e) {
+    const winnerIndex = parseInt(e.currentTarget.dataset.winnerIndex);
+    const typeIndex = parseInt(e.detail.value);
+    const winInfo = this.data.winInfo;
+    
+    if (!winInfo.winners[winnerIndex]) {
+      winInfo.winners[winnerIndex] = { playerIndex: -1, winType: '' };
+    }
+    
+    if (typeIndex === 0) {
+      winInfo.winners[winnerIndex].winType = '';
+    } else {
+      winInfo.winners[winnerIndex].winType = config.WIN_TYPES[typeIndex - 1];
+    }
+    this.setData({ winInfo });
+  },
+
   // 胡牌者选择
   onWinnerChange(e) {
     const index = parseInt(e.detail.value);
@@ -64,12 +169,20 @@ Page({
     if (index === 0) {
       winInfo.winnerIndex = -1;
       winInfo.winnerIndices = [];
+      winInfo.multiWinTypes = {};
     } else {
       // 实际玩家索引需要减1（因为第一个是"无"）
       winInfo.winnerIndex = index - 1;
       // 如果是一炮多响，需要更新winnerIndices
       if (winInfo.winnerIndices.length === 0) {
         winInfo.winnerIndices = [index - 1];
+        // 设置主胡牌者的类型
+        if (winInfo.winType) {
+          if (!winInfo.multiWinTypes) {
+            winInfo.multiWinTypes = {};
+          }
+          winInfo.multiWinTypes[index - 1] = winInfo.winType;
+        }
       }
     }
     this.setData({ winInfo });
@@ -85,6 +198,10 @@ Page({
     } else {
       // 实际类型索引需要减1（因为第一个是"无"）
       winInfo.winType = config.WIN_TYPES[index - 1];
+      // 更新主胡牌者的类型
+      if (winInfo.winnerIndex >= 0) {
+        winInfo.multiWinTypes[winInfo.winnerIndex] = winInfo.winType;
+      }
     }
     this.setData({ 
       winTypeIndex: index,
@@ -99,7 +216,18 @@ Page({
     winInfo.isSelfDraw = (value === 'selfDraw');
     if (winInfo.isSelfDraw) {
       winInfo.shooterIndex = -1;
-      winInfo.winnerIndices = winInfo.winnerIndex >= 0 ? [winInfo.winnerIndex] : [];
+      // 自摸时不能一炮多响，自动关闭
+      if (winInfo.isMultiWin) {
+        winInfo.isMultiWin = false;
+        // 只保留第一个胡牌者
+        if (winInfo.winners.length > 0) {
+          winInfo.winners = [winInfo.winners[0]];
+        } else {
+          winInfo.winners = [{ playerIndex: -1, winType: '' }];
+        }
+      } else if (winInfo.winners.length === 0) {
+        winInfo.winners = [{ playerIndex: -1, winType: '' }];
+      }
     }
     this.setData({ winInfo });
   },
@@ -114,9 +242,14 @@ Page({
     } else {
       // 实际玩家索引需要减1（因为第一个是"无"）
       winInfo.shooterIndex = index - 1;
-      // 更新一炮多响的选项，排除点炮者
-      if (winInfo.winnerIndices.indexOf(index - 1) > -1) {
-        winInfo.winnerIndices = winInfo.winnerIndices.filter(i => i !== (index - 1));
+      // 如果一炮多响，排除点炮者
+      if (winInfo.isMultiWin && winInfo.winners) {
+        winInfo.winners.forEach(winner => {
+          if (winner.playerIndex === index - 1) {
+            winner.playerIndex = -1;
+            winner.winType = '';
+          }
+        });
       }
     }
     this.setData({ winInfo });
@@ -132,10 +265,28 @@ Page({
       // 更新主胡牌者为第一个
       if (values.length > 0) {
         winInfo.winnerIndex = values[0];
+        // 确保主胡牌者有类型
+        if (!winInfo.multiWinTypes[values[0]] && winInfo.winType) {
+          winInfo.multiWinTypes[values[0]] = winInfo.winType;
+        }
       }
     } else {
       // 如果没有选择，使用主胡牌者
       winInfo.winnerIndices = winInfo.winnerIndex >= 0 ? [winInfo.winnerIndex] : [];
+    }
+    this.setData({ winInfo });
+  },
+
+  // 一炮多响玩家类型选择
+  onMultiWinTypeChange(e) {
+    const playerIndex = parseInt(e.currentTarget.dataset.playerIndex);
+    const typeIndex = parseInt(e.detail.value);
+    const winInfo = this.data.winInfo;
+    
+    if (typeIndex === 0) {
+      delete winInfo.multiWinTypes[playerIndex];
+    } else {
+      winInfo.multiWinTypes[playerIndex] = config.WIN_TYPES[typeIndex - 1];
     }
     this.setData({ winInfo });
   },
@@ -173,7 +324,7 @@ Page({
     this.setData({ gangInfo });
   },
 
-  // 杠的玩家选择
+  // 捡杠者选择
   onGangPlayerChange(e) {
     const gangIndex = e.currentTarget.dataset.gangIndex;
     const playerIndex = parseInt(e.detail.value);
@@ -182,7 +333,7 @@ Page({
     this.setData({ gangInfo });
   },
 
-  // 点杠者选择
+  // 放杠者选择
   onPointGangChange(e) {
     const gangIndex = e.currentTarget.dataset.gangIndex;
     const pointGangIndex = parseInt(e.detail.value);
@@ -195,21 +346,88 @@ Page({
   calculateScore() {
     const { players, winInfo, gangInfo } = this.data;
 
-    // 验证数据
-    if (winInfo.winnerIndex < 0 || !winInfo.winType) {
+    // 验证必须有庄家
+    const hasDealer = players.some(p => p.isDealer);
+    if (!hasDealer) {
       wx.showToast({
-        title: '请选择胡牌者和胡牌类型',
+        title: '请设置庄家',
         icon: 'none'
       });
       return;
     }
 
-    if (!winInfo.isSelfDraw && winInfo.shooterIndex < 0) {
-      wx.showToast({
-        title: '请选择点炮者',
-        icon: 'none'
-      });
-      return;
+    // 如果不是荒庄，需要验证胡牌信息
+    if (!winInfo.isDrawGame) {
+      // 验证数据
+      if (!winInfo.winners || winInfo.winners.length === 0) {
+        winInfo.winners = [{ playerIndex: -1, winType: '' }];
+        this.setData({ winInfo });
+      }
+
+      // 验证每个胡牌者（只验证已选择的）
+      let hasValidWinner = false;
+      for (let i = 0; i < winInfo.winners.length; i++) {
+        const winner = winInfo.winners[i];
+        // 如果选择了玩家但没有选择类型，或者选择了类型但没有选择玩家，都是无效的
+        if (winner.playerIndex >= 0 && !winner.winType) {
+          wx.showToast({
+            title: `请选择胡牌者${i + 1}的胡牌类型`,
+            icon: 'none'
+          });
+          return;
+        }
+        if (winner.winType && winner.playerIndex < 0) {
+          wx.showToast({
+            title: `请选择胡牌者${i + 1}`,
+            icon: 'none'
+          });
+          return;
+        }
+        // 如果既选择了玩家又选择了类型，验证是否有效
+        if (winner.playerIndex >= 0 && winner.winType) {
+          hasValidWinner = true;
+          // 验证不能选择点炮者
+          if (!winInfo.isSelfDraw && winner.playerIndex === winInfo.shooterIndex) {
+            wx.showToast({
+              title: `胡牌者${i + 1}不能是点炮者`,
+              icon: 'none'
+            });
+            return;
+          }
+        }
+      }
+      
+      // 至少需要一个有效的胡牌者
+      if (!hasValidWinner) {
+        wx.showToast({
+          title: '请至少选择一个胡牌者和胡牌类型',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // 验证一炮多响时，已选择的胡牌者不能重复
+      if (winInfo.isMultiWin) {
+        const playerIndices = winInfo.winners
+          .filter(w => w.playerIndex >= 0 && w.winType)
+          .map(w => w.playerIndex);
+        const uniqueIndices = [...new Set(playerIndices)];
+        if (playerIndices.length !== uniqueIndices.length) {
+          wx.showToast({
+            title: '一炮多响时，胡牌者不能重复，请选择不同的玩家',
+            icon: 'none'
+          });
+          return;
+        }
+      }
+
+      if (!winInfo.isSelfDraw && winInfo.shooterIndex < 0) {
+        wx.showToast({
+          title: '请选择点炮者',
+          icon: 'none'
+        });
+        return;
+      }
     }
 
     // 验证杠信息
@@ -217,14 +435,14 @@ Page({
       const gang = gangInfo[i];
       if (gang.playerIndex < 0) {
         wx.showToast({
-          title: `请选择第${i + 1}个杠的玩家`,
+          title: `请选择第${i + 1}个杠的捡杠者`,
           icon: 'none'
         });
         return;
       }
       if (gang.type === '点杠' && gang.pointGangIndex < 0) {
         wx.showToast({
-          title: `请选择第${i + 1}个点杠的点杠者`,
+          title: `请选择第${i + 1}个点杠的放杠者`,
           icon: 'none'
         });
         return;
@@ -235,11 +453,11 @@ Page({
     const gameData = {
       players: players,
       winInfo: {
-        winnerIndex: winInfo.winnerIndex,
-        winType: winInfo.winType,
+        isMultiWin: winInfo.isMultiWin,
+        winners: winInfo.winners.filter(w => w.playerIndex >= 0 && w.winType),
         isSelfDraw: winInfo.isSelfDraw,
         shooterIndex: winInfo.shooterIndex,
-        winnerIndices: winInfo.winnerIndices.length > 0 ? winInfo.winnerIndices : [winInfo.winnerIndex]
+        isDrawGame: winInfo.isDrawGame
       },
       gangInfo: gangInfo.map(gang => ({
         type: gang.type,

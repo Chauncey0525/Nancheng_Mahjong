@@ -17,7 +17,7 @@ const WIN_SCORES = {
 // 杠分配置
 const GANG_SCORES = {
   '点杠': { 
-    pointGang: 2,  // 点杠者
+    pointGang: 2,  // 放杠者
     dealer: 4,     // 庄家（翻倍）
     others: 1      // 其余玩家
   },

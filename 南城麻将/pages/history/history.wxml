@@ -98,8 +98,8 @@
         <view class="detail-title">杠分信息</view>
         <view class="detail-item" wx:for="{{currentDetail.gangInfo}}" wx:key="index">
           <text>{{item.type}}</text>
-          <text>杠的玩家: {{currentDetail.players[item.playerIndex].name}}</text>
-          <text wx:if="{{item.type === '点杠'}}">点杠者: {{currentDetail.players[item.pointGangIndex].name}}</text>
+          <text>捡杠者: {{currentDetail.players[item.playerIndex].name}}</text>
+          <text wx:if="{{item.type === '点杠'}}">放杠者: {{currentDetail.players[item.pointGangIndex].name}}</text>
         </view>
       </view>
       <view class="detail-section">

@@ -90,27 +90,27 @@ function calculateGangScore(gangInfo, players) {
 
   gangInfo.forEach(gang => {
     const { type, playerIndex, pointGangIndex } = gang;
-    const gangPlayer = players[playerIndex];
+    const gangPlayer = players[playerIndex]; // 捡杠者
     if (!gangPlayer) return;
 
     if (type === '点杠') {
-      // 点杠：点杠者2分，庄家翻倍4分，其余玩家1分
-      // 注意：如果杠的玩家是庄家，点杠者和其他玩家都要翻倍（庄家没有奇数）
+      // 点杠：放杠者2分，庄家翻倍4分，其余玩家1分
+      // 注意：如果捡杠者是庄家，放杠者和其他玩家都要翻倍（庄家没有奇数）
       if (pointGangIndex >= 0 && pointGangIndex < players.length) {
-        const pointGangPlayer = players[pointGangIndex];
+        const pointGangPlayer = players[pointGangIndex]; // 放杠者
         let pointGangScore = config.GANG_SCORES['点杠'].pointGang;
-        // 如果点杠者是庄家，翻倍
+        // 如果放杠者是庄家，翻倍
         if (pointGangPlayer.isDealer) {
           pointGangScore = config.GANG_SCORES['点杠'].dealer;
         }
-        // 如果杠的玩家是庄家，点杠者也要翻倍
+        // 如果捡杠者是庄家，放杠者也要翻倍
         else if (gangPlayer.isDealer) {
           pointGangScore = config.GANG_SCORES['点杠'].dealer;
         }
         scores[`${pointGangIndex}_${playerIndex}`] = pointGangScore;
       }
 
-      // 其余玩家各1分，但如果杠的玩家是庄家，翻倍为2分
+      // 其余玩家各1分，但如果捡杠者是庄家，翻倍为2分
       players.forEach((player, idx) => {
         if (idx !== playerIndex && idx !== pointGangIndex) {
           let score = config.GANG_SCORES['点杠'].others;
@@ -118,7 +118,7 @@ function calculateGangScore(gangInfo, players) {
           if (player.isDealer) {
             score = config.GANG_SCORES['点杠'].dealer;
           }
-          // 如果杠的玩家是庄家，其他玩家也要翻倍（庄家没有奇数）
+          // 如果捡杠者是庄家，其他玩家也要翻倍（庄家没有奇数）
           else if (gangPlayer.isDealer) {
             score = config.GANG_SCORES['点杠'].others * 2; // 1分翻倍为2分
           }
@@ -151,15 +151,27 @@ function calculateGangScore(gangInfo, players) {
 function calculateAllScores(gameData) {
   const { players, winInfo, gangInfo } = gameData;
   
-  // 计算胡分
-  const winScores = calculateWinScore(
-    winInfo.winType,
-    winInfo.winnerIndex,
-    winInfo.isSelfDraw,
-    winInfo.shooterIndex,
-    winInfo.winnerIndices,
-    players
-  );
+  // 计算胡分（荒庄时不计算胡分）
+  let winScores = {};
+  if (!winInfo.isDrawGame && winInfo.winners && winInfo.winners.length > 0) {
+    // 为每个胡牌者分别计算
+    winInfo.winners.forEach(winner => {
+      if (winner.playerIndex >= 0 && winner.winType) {
+        const scores = calculateWinScore(
+          winner.winType,
+          winner.playerIndex,
+          winInfo.isSelfDraw,
+          winInfo.shooterIndex,
+          [winner.playerIndex],  // 单个玩家
+          players
+        );
+        // 合并分数
+        Object.keys(scores).forEach(key => {
+          winScores[key] = (winScores[key] || 0) + scores[key];
+        });
+      }
+    });
+  }
 
   // 计算杠分
   const gangScores = calculateGangScore(gangInfo, players);

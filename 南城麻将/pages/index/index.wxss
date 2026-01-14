@@ -42,6 +42,60 @@
   white-space: nowrap;
 }
 
+.draw-game-container {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.draw-game-switch {
+  flex-shrink: 0;
+}
+
+.draw-game-label {
+  font-size: 26rpx;
+  color: #999;
+  flex-shrink: 0;
+  line-height: 1.5;
+}
+
+.multi-win-types {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.multi-win-type-item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 15rpx;
+  background-color: #F8F9FA;
+  border-radius: 8rpx;
+}
+
+.multi-win-player-name {
+  font-size: 28rpx;
+  color: #333;
+  min-width: 80rpx;
+  font-weight: bold;
+}
+
+.winner-item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.winner-label {
+  font-size: 28rpx;
+  color: #333;
+  min-width: 120rpx;
+  font-weight: bold;
+}
+
 .ma-input {
   width: 100% !important;
   height: 80rpx !important;
