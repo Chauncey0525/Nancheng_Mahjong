@@ -1,0 +1,116 @@
+<!--pages/history/history.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="header-title">历史记录</text>
+    <text class="header-count" wx:if="{{history.length > 0}}">共{{history.length}}条</text>
+  </view>
+
+  <!-- 统计信息 -->
+  <view class="card" wx:if="{{history.length > 0}}">
+    <view class="card-title">总得分统计</view>
+    <view class="stats-section">
+      <view class="stat-item" wx:for="{{totalScores}}" wx:key="playerIndex">
+        <text class="stat-name">{{item.playerName}}</text>
+        <text class="stat-value {{item.totalScore >= 0 ? 'positive' : 'negative'}}">
+          {{item.totalScore >= 0 ? '+' : ''}}{{item.totalScore}}分
+        </text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 历史记录列表 -->
+  <view class="history-list" wx:if="{{history.length > 0}}">
+    <view class="history-item card" wx:for="{{history}}" wx:key="id" bindtap="viewDetail" data-index="{{index}}">
+      <view class="history-header">
+        <text class="history-time">{{item.timestamp}}</text>
+        <text class="delete-btn" catchtap="deleteRecord" data-id="{{item.id}}">删除</text>
+      </view>
+      <view class="history-summary">
+        <view class="summary-row">
+          <text class="summary-label">胡牌者:</text>
+          <text class="summary-value">{{item.winInfo.winnerIndex >= 0 ? item.players[item.winInfo.winnerIndex].name : '未设置'}}</text>
+        </view>
+        <view class="summary-row">
+          <text class="summary-label">胡牌类型:</text>
+          <text class="summary-value">{{item.winInfo.winType || '未设置'}}</text>
+        </view>
+        <view class="summary-row">
+          <text class="summary-label">方式:</text>
+          <text class="summary-value">{{item.winInfo.isSelfDraw ? '自摸' : '点炮'}}</text>
+        </view>
+      </view>
+      <view class="history-results">
+        <view class="result-mini" wx:for="{{item.results}}" wx:key="playerIndex" wx:for-item="result">
+          <text class="result-mini-name">{{result.playerName}}</text>
+          <text class="result-mini-score {{result.totalScore >= 0 ? 'positive' : 'negative'}}">
+            {{result.totalScore >= 0 ? '+' : ''}}{{result.totalScore}}
+          </text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{history.length === 0}}">
+    <text class="empty-state-icon">📝</text>
+    <text class="empty-state-text">暂无历史记录</text>
+    <text class="empty-state-hint">在算分页面保存记录后，会显示在这里</text>
+  </view>
+
+  <!-- 清空按钮 -->
+  <view class="action-buttons" wx:if="{{history.length > 0}}">
+    <button class="btn btn-danger" bindtap="clearAll">清空所有记录</button>
+  </view>
+</view>
+
+<!-- 详情弹窗 -->
+<view class="modal" wx:if="{{showDetail}}" bindtap="closeDetail">
+  <view class="modal-content" catchtap="stopPropagation">
+    <view class="modal-header">
+      <text class="modal-title">记录详情</text>
+      <text class="modal-close" bindtap="closeDetail">×</text>
+    </view>
+    <view class="modal-body" wx:if="{{currentDetail}}">
+      <view class="detail-section">
+        <view class="detail-title">玩家信息</view>
+        <view class="detail-item" wx:for="{{currentDetail.players}}" wx:key="index">
+          <text>{{item.name}}</text>
+          <text>码数: {{item.ma}}</text>
+          <text wx:if="{{item.isDealer}}" class="tag tag-primary">庄家</text>
+        </view>
+      </view>
+      <view class="detail-section">
+        <view class="detail-title">胡牌信息</view>
+        <view class="detail-item">
+          <text>胡牌者: {{currentDetail.players[currentDetail.winInfo.winnerIndex].name}}</text>
+        </view>
+        <view class="detail-item">
+          <text>类型: {{currentDetail.winInfo.winType}}</text>
+        </view>
+        <view class="detail-item">
+          <text>方式: {{currentDetail.winInfo.isSelfDraw ? '自摸' : '点炮'}}</text>
+        </view>
+        <view class="detail-item" wx:if="{{!currentDetail.winInfo.isSelfDraw}}">
+          <text>点炮者: {{currentDetail.players[currentDetail.winInfo.shooterIndex].name}}</text>
+        </view>
+      </view>
+      <view class="detail-section" wx:if="{{currentDetail.gangInfo.length > 0}}">
+        <view class="detail-title">杠分信息</view>
+        <view class="detail-item" wx:for="{{currentDetail.gangInfo}}" wx:key="index">
+          <text>{{item.type}}</text>
+          <text>杠的玩家: {{currentDetail.players[item.playerIndex].name}}</text>
+          <text wx:if="{{item.type === '点杠'}}">点杠者: {{currentDetail.players[item.pointGangIndex].name}}</text>
+        </view>
+      </view>
+      <view class="detail-section">
+        <view class="detail-title">得分结果</view>
+        <view class="detail-item" wx:for="{{currentDetail.results}}" wx:key="playerIndex">
+          <text>{{item.playerName}}</text>
+          <text class="{{item.totalScore >= 0 ? 'positive' : 'negative'}}">
+            {{item.totalScore >= 0 ? '+' : ''}}{{item.totalScore}}分
+          </text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

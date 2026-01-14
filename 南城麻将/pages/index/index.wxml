@@ -1,0 +1,136 @@
+<!--pages/index/index.wxml-->
+<view class="container">
+  <!-- 玩家信息设置 -->
+  <view class="card">
+    <view class="card-title">玩家信息</view>
+    <view class="players-section">
+      <view class="player-item" wx:for="{{players}}" wx:key="index">
+        <view class="player-header">
+          <text class="player-name">{{item.name}}</text>
+          <switch checked="{{item.isDealer}}" bindchange="onDealerChange" data-index="{{index}}" class="dealer-switch"/>
+          <text class="dealer-label">庄家</text>
+        </view>
+        <view class="input-group">
+          <text class="input-label">码数</text>
+          <input class="input" type="number" value="{{item.ma}}" placeholder="请输入码数" 
+                 bindinput="onMaInput" data-index="{{index}}"/>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 胡牌信息输入 -->
+  <view class="card">
+    <view class="card-title">胡牌信息</view>
+    
+    <view class="input-group">
+      <text class="input-label">胡牌者</text>
+      <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{winInfo.winnerIndex}}" 
+              bindchange="onWinnerChange">
+        <view class="picker">{{winInfo.winnerIndex >= 0 ? playerNames[winInfo.winnerIndex].name : '请选择胡牌者'}}</view>
+      </picker>
+    </view>
+
+    <view class="input-group">
+      <text class="input-label">胡牌类型</text>
+      <picker mode="selector" range="{{winTypes}}" value="{{winTypeIndex}}" bindchange="onWinTypeChange">
+        <view class="picker">{{winTypes[winTypeIndex] || '请选择胡牌类型'}}</view>
+      </picker>
+    </view>
+
+    <view class="input-group">
+      <text class="input-label">胡牌方式</text>
+      <radio-group class="radio-group" bindchange="onWinMethodChange">
+        <label class="radio-item">
+          <radio value="selfDraw" checked="{{winInfo.isSelfDraw}}"/>自摸
+        </label>
+        <label class="radio-item">
+          <radio value="shoot" checked="{{!winInfo.isSelfDraw}}"/>点炮
+        </label>
+      </radio-group>
+    </view>
+
+    <view class="input-group" wx:if="{{!winInfo.isSelfDraw}}">
+      <text class="input-label">点炮者</text>
+      <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{winInfo.shooterIndex}}" 
+              bindchange="onShooterChange">
+        <view class="picker">{{winInfo.shooterIndex >= 0 ? playerNames[winInfo.shooterIndex].name : '请选择点炮者'}}</view>
+      </picker>
+    </view>
+
+    <view class="input-group" wx:if="{{!winInfo.isSelfDraw && winInfo.shooterIndex >= 0}}">
+      <text class="input-label">一炮多响（可多选）</text>
+      <checkbox-group bindchange="onMultiWinChange">
+        <view class="checkbox-list">
+          <label class="checkbox-item" wx:for="{{players}}" wx:key="index" wx:if="{{index != winInfo.shooterIndex}}">
+            <checkbox value="{{index}}" checked="{{winInfo.winnerIndices.indexOf(index) > -1}}"/>
+            <text>{{item.name}}</text>
+          </label>
+        </view>
+      </checkbox-group>
+    </view>
+  </view>
+
+  <!-- 杠分信息输入 -->
+  <view class="card">
+    <view class="card-title">杠分信息</view>
+    <view class="gang-list">
+      <view class="gang-item" wx:for="{{gangInfo}}" wx:key="index">
+        <view class="gang-header">
+          <text>杠 {{index + 1}}</text>
+          <text class="delete-btn" bindtap="deleteGang" data-index="{{index}}">删除</text>
+        </view>
+        <view class="input-group">
+          <text class="input-label">杠的类型</text>
+          <picker mode="selector" range="{{gangTypes}}" value="{{item.gangTypeIndex}}" 
+                  bindchange="onGangTypeChange" data-gang-index="{{index}}">
+            <view class="picker">{{gangTypes[item.gangTypeIndex] || '请选择'}}</view>
+          </picker>
+        </view>
+        <view class="input-group">
+          <text class="input-label">杠的玩家</text>
+          <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{item.playerIndex}}" 
+                  bindchange="onGangPlayerChange" data-gang-index="{{index}}">
+            <view class="picker">{{item.playerIndex >= 0 ? playerNames[item.playerIndex].name : '请选择'}}</view>
+          </picker>
+        </view>
+        <view class="input-group" wx:if="{{item.type === '点杠'}}">
+          <text class="input-label">点杠者</text>
+          <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{item.pointGangIndex}}" 
+                  bindchange="onPointGangChange" data-gang-index="{{index}}">
+            <view class="picker">{{item.pointGangIndex >= 0 ? playerNames[item.pointGangIndex].name : '请选择'}}</view>
+          </picker>
+        </view>
+      </view>
+    </view>
+    <button class="btn btn-secondary" bindtap="addGang">添加杠</button>
+  </view>
+
+  <!-- 计算结果展示 -->
+  <view class="card" wx:if="{{results.length > 0}}">
+    <view class="card-title">计算结果</view>
+    <view class="results-section">
+      <view class="result-item" wx:for="{{results}}" wx:key="playerIndex">
+        <view class="result-header">
+          <text class="result-label">{{item.playerName}}</text>
+          <text class="result-value {{item.totalScore >= 0 ? 'positive' : 'negative'}}">
+            {{item.totalScore >= 0 ? '+' : ''}}{{item.totalScore}}分
+          </text>
+        </view>
+        <view class="result-details" wx:if="{{item.details.length > 0}}">
+          <view class="detail-item" wx:for="{{item.details}}" wx:key="targetIndex" wx:for-item="detail">
+            <text class="detail-text">{{detail.targetName}}: {{detail.score >= 0 ? '+' : ''}}{{detail.score}}分</text>
+            <text class="detail-note">(基础:{{detail.baseScore}}, 码:{{detail.ma}})</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-buttons">
+    <button class="btn btn-primary" bindtap="calculateScore">计算得分</button>
+    <button class="btn btn-success" bindtap="saveRecord" disabled="{{results.length === 0}}">保存记录</button>
+    <button class="btn btn-secondary" bindtap="resetForm">清空重来</button>
+  </view>
+</view>

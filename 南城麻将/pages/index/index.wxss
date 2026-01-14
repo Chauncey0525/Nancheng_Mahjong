@@ -1,0 +1,164 @@
+/* pages/index/index.wxss */
+.players-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.player-item {
+  padding: 20rpx;
+  background-color: #F8F9FA;
+  border-radius: 8rpx;
+  border: 2rpx solid #E0E0E0;
+}
+
+.player-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.player-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  flex: 1;
+}
+
+.dealer-switch {
+  margin-right: 10rpx;
+}
+
+.dealer-label {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.radio-group {
+  display: flex;
+  gap: 40rpx;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  font-size: 32rpx;
+}
+
+.checkbox-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  font-size: 32rpx;
+  padding: 10rpx 20rpx;
+  background-color: #F8F9FA;
+  border-radius: 8rpx;
+}
+
+.gang-list {
+  margin-bottom: 20rpx;
+}
+
+.gang-item {
+  padding: 20rpx;
+  background-color: #F8F9FA;
+  border-radius: 8rpx;
+  margin-bottom: 20rpx;
+  border: 2rpx solid #E0E0E0;
+}
+
+.gang-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.delete-btn {
+  color: #FF4D4F;
+  font-size: 28rpx;
+  padding: 8rpx 16rpx;
+  background-color: #FFF1F0;
+  border-radius: 4rpx;
+}
+
+.results-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.result-item {
+  padding: 20rpx;
+  background-color: #F8F9FA;
+  border-radius: 8rpx;
+  border-left: 6rpx solid #4A90E2;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15rpx;
+}
+
+.result-label {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.result-value {
+  font-size: 40rpx;
+  font-weight: bold;
+}
+
+.result-details {
+  margin-top: 15rpx;
+  padding-top: 15rpx;
+  border-top: 1rpx solid #E0E0E0;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10rpx;
+  font-size: 28rpx;
+}
+
+.detail-text {
+  color: #666;
+}
+
+.detail-note {
+  color: #999;
+  font-size: 24rpx;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 30rpx;
+  margin-bottom: 30rpx;
+  padding-bottom: 40rpx;
+}
+
+.action-buttons .btn {
+  width: 100%;
+  padding: 28rpx 0;
+  font-size: 34rpx;
+  border-radius: 12rpx;
+}
+
+.action-buttons .btn[disabled] {
+  opacity: 0.5;
+}
