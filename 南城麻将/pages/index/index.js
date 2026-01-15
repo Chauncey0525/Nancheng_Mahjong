@@ -17,6 +17,12 @@ Page({
       { name: '西方', index: 2 },
       { name: '北方', index: 3 }
     ],
+    playerNamesForGang: [
+      { name: '东方', index: 0 },
+      { name: '南方', index: 1 },
+      { name: '西方', index: 2 },
+      { name: '北方', index: 3 }
+    ],
     winTypes: ['无', ...config.WIN_TYPES],
     winTypeIndex: 0,
     winInfo: {
@@ -297,8 +303,8 @@ Page({
     gangInfo.push({
       type: '点杠',
       gangTypeIndex: 0,
-      playerIndex: -1,
-      pointGangIndex: -1
+      playerIndex: 0,  // 默认东方（索引0）
+      pointGangIndex: 1  // 默认南方（索引1）
     });
     this.setData({ gangInfo });
   },
@@ -327,18 +333,50 @@ Page({
   // 捡杠者选择
   onGangPlayerChange(e) {
     const gangIndex = e.currentTarget.dataset.gangIndex;
-    const playerIndex = parseInt(e.detail.value);
+    const valueIndex = parseInt(e.detail.value);
     const gangInfo = this.data.gangInfo;
-    gangInfo[gangIndex].playerIndex = playerIndex;
+    
+    // playerNames数组直接对应玩家索引
+    // valueIndex 0 = "东方" -> playerIndex 0
+    // valueIndex 1 = "南方" -> playerIndex 1
+    // ...
+    const newPlayerIndex = valueIndex;
+    
+    // 验证捡杠者和放杠者不能是同一个人
+    if (gangInfo[gangIndex].pointGangIndex >= 0 && gangInfo[gangIndex].pointGangIndex === newPlayerIndex) {
+      wx.showToast({
+        title: '捡杠者和放杠者不能是同一个人',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    gangInfo[gangIndex].playerIndex = newPlayerIndex;
     this.setData({ gangInfo });
   },
 
   // 放杠者选择
   onPointGangChange(e) {
     const gangIndex = e.currentTarget.dataset.gangIndex;
-    const pointGangIndex = parseInt(e.detail.value);
+    const valueIndex = parseInt(e.detail.value);
     const gangInfo = this.data.gangInfo;
-    gangInfo[gangIndex].pointGangIndex = pointGangIndex;
+    
+    // playerNames数组直接对应玩家索引
+    // valueIndex 0 = "东方" -> pointGangIndex 0
+    // valueIndex 1 = "南方" -> pointGangIndex 1
+    // ...
+    const newPointGangIndex = valueIndex;
+    
+    // 验证捡杠者和放杠者不能是同一个人
+    if (gangInfo[gangIndex].playerIndex >= 0 && gangInfo[gangIndex].playerIndex === newPointGangIndex) {
+      wx.showToast({
+        title: '捡杠者和放杠者不能是同一个人',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    gangInfo[gangIndex].pointGangIndex = newPointGangIndex;
     this.setData({ gangInfo });
   },
 
@@ -433,19 +471,39 @@ Page({
     // 验证杠信息
     for (let i = 0; i < gangInfo.length; i++) {
       const gang = gangInfo[i];
-      if (gang.playerIndex < 0) {
-        wx.showToast({
-          title: `请选择第${i + 1}个杠的捡杠者`,
-          icon: 'none'
-        });
-        return;
-      }
-      if (gang.type === '点杠' && gang.pointGangIndex < 0) {
-        wx.showToast({
-          title: `请选择第${i + 1}个点杠的放杠者`,
-          icon: 'none'
-        });
-        return;
+      if (gang.type === '点杠') {
+        // 点杠必须有捡杠者和放杠者
+        if (gang.playerIndex < 0) {
+          wx.showToast({
+            title: `请选择第${i + 1}个点杠的捡杠者`,
+            icon: 'none'
+          });
+          return;
+        }
+        if (gang.pointGangIndex < 0) {
+          wx.showToast({
+            title: `请选择第${i + 1}个点杠的放杠者`,
+            icon: 'none'
+          });
+          return;
+        }
+        // 验证捡杠者和放杠者不能是同一个人
+        if (gang.playerIndex === gang.pointGangIndex) {
+          wx.showToast({
+            title: `第${i + 1}个点杠的捡杠者和放杠者不能是同一个人`,
+            icon: 'none'
+          });
+          return;
+        }
+      } else if (gang.type === '暗杠') {
+        // 暗杠必须有捡杠者
+        if (gang.playerIndex < 0) {
+          wx.showToast({
+            title: `请选择第${i + 1}个暗杠的捡杠者`,
+            icon: 'none'
+          });
+          return;
+        }
       }
     }
 

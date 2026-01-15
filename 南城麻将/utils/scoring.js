@@ -94,34 +94,44 @@ function calculateGangScore(gangInfo, players) {
     if (!gangPlayer) return;
 
     if (type === '点杠') {
-      // 点杠：放杠者2分，庄家翻倍4分，其余玩家1分
-      // 注意：如果捡杠者是庄家，放杠者和其他玩家都要翻倍（庄家没有奇数）
+      // 点杠规则：点杠者（放杠者）给2分，其他玩家给1分，庄家翻倍
+      // 具体情况：
+      // 1. 庄点闲：点杠者（庄家）给-4分，其他两家闲家各给-1分
+      // 2. 闲点庄：点杠者（闲家）给-4分，其他两家各给-2分（因为捡杠者是庄家，需要翻倍）
+      // 3. 闲点闲：点杠者（闲家）给-2分，庄家给-2分，另一家闲家给-1分
+      
       if (pointGangIndex >= 0 && pointGangIndex < players.length) {
-        const pointGangPlayer = players[pointGangIndex]; // 放杠者
-        let pointGangScore = config.GANG_SCORES['点杠'].pointGang;
-        // 如果放杠者是庄家，翻倍
+        const pointGangPlayer = players[pointGangIndex]; // 放杠者（点杠者）
+        
+        // 计算点杠者（放杠者）的分数
+        let pointGangScore = config.GANG_SCORES['点杠'].pointGang; // 基础2分
+        
+        // 如果点杠者是庄家，翻倍为4分（庄点闲）
         if (pointGangPlayer.isDealer) {
-          pointGangScore = config.GANG_SCORES['点杠'].dealer;
+          pointGangScore = config.GANG_SCORES['点杠'].dealer; // 4分
         }
-        // 如果捡杠者是庄家，放杠者也要翻倍
+        // 如果捡杠者是庄家，点杠者也要翻倍为4分（闲点庄）
         else if (gangPlayer.isDealer) {
-          pointGangScore = config.GANG_SCORES['点杠'].dealer;
+          pointGangScore = config.GANG_SCORES['点杠'].dealer; // 4分
         }
+        // 否则是闲点闲，点杠者给2分
+        
         scores[`${pointGangIndex}_${playerIndex}`] = pointGangScore;
       }
 
-      // 其余玩家各1分，但如果捡杠者是庄家，翻倍为2分
+      // 计算其他玩家的分数（不包括点杠者和捡杠者）
       players.forEach((player, idx) => {
         if (idx !== playerIndex && idx !== pointGangIndex) {
-          let score = config.GANG_SCORES['点杠'].others;
-          // 如果其他玩家是庄家，翻倍
-          if (player.isDealer) {
-            score = config.GANG_SCORES['点杠'].dealer;
+          let score = config.GANG_SCORES['点杠'].others; // 基础1分
+          
+          // 判断是否需要翻倍为2分
+          // 情况1：这个玩家是庄家（无论是闲点闲还是闲点庄，庄家都翻倍）
+          // 情况2：捡杠者是庄家（闲点庄的情况，其他玩家都要翻倍）
+          if (player.isDealer || gangPlayer.isDealer) {
+            score = config.GANG_SCORES['点杠'].others * 2; // 2分
           }
-          // 如果捡杠者是庄家，其他玩家也要翻倍（庄家没有奇数）
-          else if (gangPlayer.isDealer) {
-            score = config.GANG_SCORES['点杠'].others * 2; // 1分翻倍为2分
-          }
+          // 否则是闲点闲且这个玩家不是庄家的情况，给1分
+          
           scores[`${idx}_${playerIndex}`] = score;
         }
       });
@@ -151,32 +161,113 @@ function calculateGangScore(gangInfo, players) {
 function calculateAllScores(gameData) {
   const { players, winInfo, gangInfo } = gameData;
   
-  // 计算胡分（荒庄时不计算胡分）
-  let winScores = {};
+  // 第一步：初始化所有人对其他三家的胜负关系为0
+  // scores[from_to] 表示 from 玩家需要支付给 to 玩家的分数（正数表示支付，负数表示获得）
+  const scores = {};
+  const winScores = {};  // 单独记录胡分
+  const gangScores = {}; // 单独记录杠分
+  players.forEach((player, fromIndex) => {
+    players.forEach((otherPlayer, toIndex) => {
+      if (fromIndex !== toIndex) {
+        scores[`${fromIndex}_${toIndex}`] = 0;
+        winScores[`${fromIndex}_${toIndex}`] = 0;
+        gangScores[`${fromIndex}_${toIndex}`] = 0;
+      }
+    });
+  });
+
+  // 第二步：处理胡牌关系（荒庄时不处理）
   if (!winInfo.isDrawGame && winInfo.winners && winInfo.winners.length > 0) {
-    // 为每个胡牌者分别计算
     winInfo.winners.forEach(winner => {
       if (winner.playerIndex >= 0 && winner.winType) {
-        const scores = calculateWinScore(
+        const calculatedWinScores = calculateWinScore(
           winner.winType,
           winner.playerIndex,
           winInfo.isSelfDraw,
           winInfo.shooterIndex,
-          [winner.playerIndex],  // 单个玩家
+          [winner.playerIndex],
           players
         );
-        // 合并分数
-        Object.keys(scores).forEach(key => {
-          winScores[key] = (winScores[key] || 0) + scores[key];
+        // 更新 scores 和 winScores，累加胡分
+        Object.keys(calculatedWinScores).forEach(key => {
+          scores[key] = (scores[key] || 0) + calculatedWinScores[key];
+          winScores[key] = (winScores[key] || 0) + calculatedWinScores[key];
         });
       }
     });
   }
 
-  // 计算杠分
-  const gangScores = calculateGangScore(gangInfo, players);
+  // 第三步：依次处理每个杠，每处理一个就更新所有人的积分
+  gangInfo.forEach((gang, gangIndex) => {
+    const { type, playerIndex, pointGangIndex } = gang;
+    const gangPlayer = players[playerIndex]; // 捡杠者
+    if (!gangPlayer) return;
 
-  // 计算每个玩家的总得分
+    if (type === '点杠') {
+      // 点杠规则：点杠者（放杠者）给2分，其他玩家给1分，庄家翻倍
+      // 具体情况：
+      // 1. 庄点闲：点杠者（庄家）给-4分，其他两家闲家各给-1分
+      // 2. 闲点庄：点杠者（闲家）给-4分，其他两家各给-2分（因为捡杠者是庄家，需要翻倍）
+      // 3. 闲点闲：点杠者（闲家）给-2分，庄家给-2分，另一家闲家给-1分
+      
+      if (pointGangIndex >= 0 && pointGangIndex < players.length) {
+        const pointGangPlayer = players[pointGangIndex]; // 放杠者（点杠者）
+        
+        // 计算点杠者（放杠者）的分数
+        let pointGangScore = config.GANG_SCORES['点杠'].pointGang; // 基础2分
+        
+        // 如果点杠者是庄家，翻倍为4分（庄点闲）
+        if (pointGangPlayer.isDealer) {
+          pointGangScore = config.GANG_SCORES['点杠'].dealer; // 4分
+        }
+        // 如果捡杠者是庄家，点杠者也要翻倍为4分（闲点庄）
+        else if (gangPlayer.isDealer) {
+          pointGangScore = config.GANG_SCORES['点杠'].dealer; // 4分
+        }
+        // 否则是闲点闲，点杠者给2分
+        
+        // 更新点杠者支付给捡杠者的分数
+        scores[`${pointGangIndex}_${playerIndex}`] = (scores[`${pointGangIndex}_${playerIndex}`] || 0) + pointGangScore;
+        gangScores[`${pointGangIndex}_${playerIndex}`] = (gangScores[`${pointGangIndex}_${playerIndex}`] || 0) + pointGangScore;
+      }
+
+      // 计算其他玩家的分数（不包括点杠者和捡杠者）
+      // 关键：任何人捡杠都需要对所有人的积分进行修改
+      players.forEach((player, idx) => {
+        if (idx !== playerIndex && idx !== pointGangIndex) {
+          let score = config.GANG_SCORES['点杠'].others; // 基础1分
+          
+          // 判断是否需要翻倍为2分
+          // 情况1：这个玩家是庄家（无论是闲点闲还是闲点庄，庄家都翻倍）
+          // 情况2：捡杠者是庄家（闲点庄的情况，其他玩家都要翻倍）
+          if (player.isDealer || gangPlayer.isDealer) {
+            score = config.GANG_SCORES['点杠'].others * 2; // 2分
+          }
+          // 否则是闲点闲且这个玩家不是庄家的情况，给1分
+          
+          // 更新这个玩家支付给捡杠者的分数
+          scores[`${idx}_${playerIndex}`] = (scores[`${idx}_${playerIndex}`] || 0) + score;
+          gangScores[`${idx}_${playerIndex}`] = (gangScores[`${idx}_${playerIndex}`] || 0) + score;
+        }
+      });
+    } else if (type === '暗杠') {
+      // 暗杠：其余三家各2分，庄家翻倍4分
+      // 关键：任何人捡杠都需要对所有人的积分进行修改
+      players.forEach((player, idx) => {
+        if (idx !== playerIndex) {
+          let score = config.GANG_SCORES['暗杠'].others;
+          if (player.isDealer) {
+            score = config.GANG_SCORES['暗杠'].dealer;
+          }
+          // 更新这个玩家支付给捡杠者的分数
+          scores[`${idx}_${playerIndex}`] = (scores[`${idx}_${playerIndex}`] || 0) + score;
+          gangScores[`${idx}_${playerIndex}`] = (gangScores[`${idx}_${playerIndex}`] || 0) + score;
+        }
+      });
+    }
+  });
+
+  // 第四步：根据最终的 scores 计算每个玩家的总得分
   const results = [];
   const detailResults = [];
 
@@ -186,20 +277,32 @@ function calculateAllScores(gameData) {
 
     // 对每个其他玩家计算得分
     // 根据买码规则：每个方位计算与其他三家的正负得分
-    // 第一步：计算玩家A对玩家B的得分 = (胡分+杠分) × 对方码数
-    // 第二步：玩家A的最终得分 = (玩家A对所有其他玩家的得分之和) × 玩家A自己的码数
+    // 第一步：计算玩家A对玩家B的得分 = (胡分+杠分) × (1 + 对方码数)
+    // 第二步：玩家A的最终得分 = (玩家A对所有其他玩家的得分之和) × (1 + 玩家A自己的码数)
     let subTotalScore = 0; // 玩家A对所有其他玩家的得分之和（未乘以自己码数）
     
     players.forEach((otherPlayer, otherIndex) => {
       if (playerIndex !== otherIndex) {
         // 计算玩家A对玩家B的净支付（胡分+杠分）
-        let baseScore = 0;
-        // 玩家A需要支付给玩家B的（对玩家A来说是支付，为负数）
-        baseScore -= (winScores[`${playerIndex}_${otherIndex}`] || 0);
-        baseScore -= (gangScores[`${playerIndex}_${otherIndex}`] || 0);
-        // 玩家B需要支付给玩家A的（对玩家A来说是获得，为正数）
-        baseScore += (winScores[`${otherIndex}_${playerIndex}`] || 0);
-        baseScore += (gangScores[`${otherIndex}_${playerIndex}`] || 0);
+        // scores[playerIndex_otherIndex] 表示玩家A需要支付给玩家B的分数（正数）
+        // scores[otherIndex_playerIndex] 表示玩家B需要支付给玩家A的分数（正数）
+        
+        // 计算胡分：玩家A对玩家B的净胡分
+        // 玩家A需要支付给玩家B的胡分（对玩家A来说是支付，为负数）
+        const winScoreFromA = -(winScores[`${playerIndex}_${otherIndex}`] || 0);
+        // 玩家B需要支付给玩家A的胡分（对玩家A来说是获得，为正数）
+        const winScoreFromB = (winScores[`${otherIndex}_${playerIndex}`] || 0);
+        const netWinScore = winScoreFromA + winScoreFromB;
+        
+        // 计算杠分：玩家A对玩家B的净杠分
+        // 玩家A需要支付给玩家B的杠分（对玩家A来说是支付，为负数）
+        const gangScoreFromA = -(gangScores[`${playerIndex}_${otherIndex}`] || 0);
+        // 玩家B需要支付给玩家A的杠分（对玩家A来说是获得，为正数）
+        const gangScoreFromB = (gangScores[`${otherIndex}_${playerIndex}`] || 0);
+        const netGangScore = gangScoreFromA + gangScoreFromB;
+        
+        // 基础分 = 净胡分 + 净杠分
+        let baseScore = netWinScore + netGangScore;
         
         // 买码规则第一步：(胡分+杠分) × (1 + 对方码数)
         // 基础倍数为1，每有1只码是多一倍
@@ -208,16 +311,17 @@ function calculateAllScores(gameData) {
         const score = baseScore * multiplier;
         subTotalScore += score;
         
-        if (score !== 0) {
-          details.push({
-            targetIndex: otherIndex,
-            targetName: otherPlayer.name,
-            score: score,
-            baseScore: baseScore,
-            ma: otherPlayer.ma || 0,
-            multiplier: multiplier
-          });
-        }
+        // 确保每个玩家都包含对其他三家的明细，即使得分为0也要显示
+        details.push({
+          targetIndex: otherIndex,
+          targetName: otherPlayer.name,
+          score: score,
+          baseScore: baseScore,
+          winScore: netWinScore,  // 净胡分
+          gangScore: netGangScore, // 净杠分
+          ma: otherPlayer.ma || 0,
+          multiplier: multiplier
+        });
       }
     });
     
@@ -243,8 +347,8 @@ function calculateAllScores(gameData) {
       subTotalScore: subTotalScore,
       playerMa: player.ma || 0,
       playerMultiplier: playerMultiplier,
-      winScores: winScores,
-      gangScores: gangScores,
+      winScores: scores,  // 保存最终的scores用于调试
+      gangScores: scores,  // 为了兼容性，也保存scores
       details: details
     });
   });
@@ -252,8 +356,8 @@ function calculateAllScores(gameData) {
   return {
     results: results,
     detailResults: detailResults,
-    winScores: winScores,
-    gangScores: gangScores
+    winScores: winScores,  // 保存胡分明细
+    gangScores: gangScores  // 保存杠分明细
   };
 }
 

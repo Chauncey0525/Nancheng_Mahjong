@@ -217,3 +217,41 @@
   font-weight: bold;
   font-size: 32rpx;
 }
+
+.result-header-in-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 10rpx;
+}
+
+.result-name {
+  font-weight: bold;
+  font-size: 30rpx;
+  color: #333;
+}
+
+.result-details-in-detail {
+  width: 100%;
+  margin-top: 10rpx;
+  padding-left: 20rpx;
+}
+
+.detail-sub-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5rpx;
+  padding: 10rpx 0;
+  border-bottom: 1rpx solid #E8E8E8;
+  font-size: 26rpx;
+}
+
+.detail-sub-item:last-child {
+  border-bottom: none;
+}
+
+.detail-sub-item .detail-note {
+  color: #999;
+  font-size: 24rpx;
+}

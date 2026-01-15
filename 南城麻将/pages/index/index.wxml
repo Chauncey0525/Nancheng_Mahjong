@@ -119,16 +119,16 @@
         </view>
         <view class="input-group">
           <text class="input-label">捡杠者</text>
-          <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{item.playerIndex}}" 
+          <picker mode="selector" range="{{playerNamesForGang}}" range-key="name" value="{{item.playerIndex >= 0 ? item.playerIndex : 0}}" 
                   bindchange="onGangPlayerChange" data-gang-index="{{index}}">
-            <view class="picker">{{item.playerIndex >= 0 ? playerNames[item.playerIndex].name : '请选择'}}</view>
+            <view class="picker">{{item.playerIndex >= 0 ? playerNamesForGang[item.playerIndex].name : playerNamesForGang[0].name}}</view>
           </picker>
         </view>
         <view class="input-group" wx:if="{{item.type === '点杠'}}">
           <text class="input-label">放杠者</text>
-          <picker mode="selector" range="{{playerNames}}" range-key="name" value="{{item.pointGangIndex}}" 
+          <picker mode="selector" range="{{playerNamesForGang}}" range-key="name" value="{{item.pointGangIndex >= 0 ? item.pointGangIndex : 0}}" 
                   bindchange="onPointGangChange" data-gang-index="{{index}}">
-            <view class="picker">{{item.pointGangIndex >= 0 ? playerNames[item.pointGangIndex].name : '请选择'}}</view>
+            <view class="picker">{{item.pointGangIndex >= 0 ? playerNamesForGang[item.pointGangIndex].name : playerNamesForGang[0].name}}</view>
           </picker>
         </view>
       </view>
@@ -147,10 +147,17 @@
             {{item.subTotalScore >= 0 ? '+' : ''}}{{item.subTotalScore}}分
           </text>
         </view>
-        <view class="result-details" wx:if="{{item.details.length > 0}}">
+        <view class="result-details">
           <view class="detail-item" wx:for="{{item.details}}" wx:key="targetIndex" wx:for-item="detail">
-            <text class="detail-text">{{detail.targetName}}: {{detail.score >= 0 ? '+' : ''}}{{detail.score}}分</text>
-            <text class="detail-note">(基础:{{detail.baseScore}}, 码:{{detail.ma}}, 倍数:{{detail.multiplier || (1 + detail.ma)}})</text>
+            <view class="detail-row">
+              <text class="detail-text">对{{detail.targetName}}: {{detail.score >= 0 ? '+' : ''}}{{detail.score}}分</text>
+            </view>
+            <view class="detail-info-row">
+              <text class="detail-base">基础分:{{detail.baseScore >= 0 ? '+' : ''}}{{detail.baseScore}}, 码数:{{detail.ma}}, 倍数:{{detail.multiplier}}</text>
+              <text class="detail-breakdown" wx:if="{{detail.winScore !== undefined || detail.gangScore !== undefined}}">
+                胡分:{{detail.winScore >= 0 ? '+' : ''}}{{detail.winScore || 0}}, 杠分:{{detail.gangScore >= 0 ? '+' : ''}}{{detail.gangScore || 0}}
+              </text>
+            </view>
           </view>
         </view>
       </view>
