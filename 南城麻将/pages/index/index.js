@@ -589,11 +589,11 @@ Page({
             ],
             winTypeIndex: 0,
             winInfo: {
-              winnerIndex: -1,
-              winType: '',
+              isMultiWin: false,  // 是否一炮多响
+              winners: [{ playerIndex: -1, winType: '' }],  // 胡牌者列表
               isSelfDraw: true,
               shooterIndex: -1,
-              winnerIndices: []
+              isDrawGame: false  // 荒庄（流局）标志
             },
             gangInfo: [],
             results: []

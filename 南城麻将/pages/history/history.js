@@ -18,7 +18,31 @@ Page({
 
   // 加载历史记录
   loadHistory() {
-    const history = wx.getStorageSync('mahjong_history') || [];
+    let history = wx.getStorageSync('mahjong_history') || [];
+    
+    // 处理旧数据格式，转换为新格式，并预处理显示数据
+    history = history.map(record => {
+      // 如果使用旧的winInfo格式，转换为新格式
+      if (record.winInfo && record.winInfo.winnerIndex !== undefined && !record.winInfo.winners) {
+        record.winInfo = {
+          isMultiWin: false,
+          winners: record.winInfo.winnerIndex >= 0 && record.winInfo.winType ? 
+            [{ playerIndex: record.winInfo.winnerIndex, winType: record.winInfo.winType }] : 
+            [{ playerIndex: -1, winType: '' }],
+          isSelfDraw: record.winInfo.isSelfDraw !== undefined ? record.winInfo.isSelfDraw : true,
+          shooterIndex: record.winInfo.shooterIndex !== undefined ? record.winInfo.shooterIndex : -1,
+          isDrawGame: record.winInfo.isDrawGame !== undefined ? record.winInfo.isDrawGame : false
+        };
+      }
+      
+      // 预处理：计算有效的胡牌者数量
+      if (record.winInfo && record.winInfo.winners) {
+        record.winInfo.validWinners = record.winInfo.winners.filter(w => w.playerIndex >= 0 && w.winType);
+        record.winInfo.hasValidWinner = record.winInfo.validWinners.length > 0;
+      }
+      
+      return record;
+    });
     
     // 计算总得分
     const totalScores = this.calculateTotalScores(history);

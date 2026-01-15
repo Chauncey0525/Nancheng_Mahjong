@@ -252,13 +252,24 @@ function calculateAllScores(gameData) {
       });
     } else if (type === '暗杠') {
       // 暗杠：其余三家各2分，庄家翻倍4分
+      // 具体情况：
+      // 1. 庄家暗杠：其他三家每家给庄家4分
+      // 2. 闲家暗杠：其他玩家给2分，如果其他玩家是庄家则给4分
       // 关键：任何人捡杠都需要对所有人的积分进行修改
       players.forEach((player, idx) => {
         if (idx !== playerIndex) {
-          let score = config.GANG_SCORES['暗杠'].others;
-          if (player.isDealer) {
-            score = config.GANG_SCORES['暗杠'].dealer;
+          let score = config.GANG_SCORES['暗杠'].others; // 基础2分
+          
+          // 如果捡杠者是庄家，其他三家每家给4分（庄家暗杠）
+          if (gangPlayer.isDealer) {
+            score = config.GANG_SCORES['暗杠'].dealer; // 4分
           }
+          // 如果其他玩家是庄家，给4分（闲家暗杠，但其他玩家是庄家）
+          else if (player.isDealer) {
+            score = config.GANG_SCORES['暗杠'].dealer; // 4分
+          }
+          // 否则是闲家暗杠且其他玩家不是庄家，给2分
+          
           // 更新这个玩家支付给捡杠者的分数
           scores[`${idx}_${playerIndex}`] = (scores[`${idx}_${playerIndex}`] || 0) + score;
           gangScores[`${idx}_${playerIndex}`] = (gangScores[`${idx}_${playerIndex}`] || 0) + score;

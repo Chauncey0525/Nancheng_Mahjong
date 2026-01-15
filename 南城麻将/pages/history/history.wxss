@@ -89,6 +89,13 @@
 .summary-value {
   color: #333;
   flex: 1;
+  word-break: break-all;
+}
+
+.gang-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
 }
 
 .history-results {

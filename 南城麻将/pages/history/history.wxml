@@ -26,17 +26,64 @@
         <text class="delete-btn" catchtap="deleteRecord" data-id="{{item.id}}">删除</text>
       </view>
       <view class="history-summary">
-        <view class="summary-row">
+        <!-- 庄家 -->
+        <view class="summary-row" wx:if="{{item.players}}">
+          <text class="summary-label">庄家:</text>
+          <text class="summary-value">
+            <text wx:for="{{item.players}}" wx:key="index" wx:for-item="player">
+              <text wx:if="{{player.isDealer}}">{{player.name}}</text>
+            </text>
+          </text>
+        </view>
+        
+        <!-- 荒庄情况 -->
+        <view class="summary-row" wx:if="{{item.winInfo.isDrawGame}}">
+          <text class="summary-label">状态:</text>
+          <text class="summary-value">荒庄（流局）</text>
+        </view>
+        
+        <!-- 胡牌信息 -->
+        <view class="summary-row" wx:if="{{!item.winInfo.isDrawGame}}">
           <text class="summary-label">胡牌者:</text>
-          <text class="summary-value">{{item.winInfo.winnerIndex >= 0 ? item.players[item.winInfo.winnerIndex].name : '未设置'}}</text>
+          <text class="summary-value">
+            <block wx:if="{{item.winInfo.hasValidWinner}}">
+              <text wx:for="{{item.winInfo.validWinners}}" wx:key="index" wx:for-item="winner" wx:for-index="wIndex">
+                <text wx:if="{{wIndex > 0}}">、</text>{{item.players[winner.playerIndex].name}}<text wx:if="{{item.winInfo.isMultiWin}}">({{winner.winType}})</text>
+              </text>
+            </block>
+            <text wx:else>未设置</text>
+          </text>
         </view>
-        <view class="summary-row">
+        
+        <!-- 胡牌类型（非一炮多响时显示） -->
+        <view class="summary-row" wx:if="{{!item.winInfo.isDrawGame && !item.winInfo.isMultiWin && item.winInfo.winners && item.winInfo.winners[0] && item.winInfo.winners[0].winType}}">
           <text class="summary-label">胡牌类型:</text>
-          <text class="summary-value">{{item.winInfo.winType || '未设置'}}</text>
+          <text class="summary-value">{{item.winInfo.winners[0].winType}}</text>
         </view>
-        <view class="summary-row">
+        
+        <!-- 放炮者 -->
+        <view class="summary-row" wx:if="{{!item.winInfo.isDrawGame && !item.winInfo.isSelfDraw && item.winInfo.shooterIndex >= 0}}">
+          <text class="summary-label">放炮者:</text>
+          <text class="summary-value">{{item.players[item.winInfo.shooterIndex].name}}</text>
+        </view>
+        
+        <!-- 方式 -->
+        <view class="summary-row" wx:if="{{!item.winInfo.isDrawGame}}">
           <text class="summary-label">方式:</text>
           <text class="summary-value">{{item.winInfo.isSelfDraw ? '自摸' : '点炮'}}</text>
+        </view>
+        
+        <!-- 杠信息 -->
+        <view class="summary-row" wx:if="{{item.gangInfo && item.gangInfo.length > 0}}">
+          <text class="summary-label">杠:</text>
+          <view class="summary-value gang-info">
+            <text wx:for="{{item.gangInfo}}" wx:key="index" wx:for-item="gang" wx:for-index="gIndex">
+              <text>杠{{gIndex + 1}}: {{item.players[gang.playerIndex].name}}捡杠</text>
+              <text wx:if="{{gang.type === '暗杠'}}">(暗杠)</text>
+              <text wx:if="{{gang.type === '点杠' && gang.pointGangIndex >= 0}}">，{{item.players[gang.pointGangIndex].name}}放杠</text>
+              <text wx:if="{{gIndex < item.gangInfo.length - 1}}">；</text>
+            </text>
+          </view>
         </view>
       </view>
       <view class="history-results">

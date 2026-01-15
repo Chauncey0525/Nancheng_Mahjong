@@ -18,11 +18,15 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "算分"
+        "text": "算分",
+        "iconPath": "images/calculator.png",
+        "selectedIconPath": "images/calculator-active.png"
       },
       {
         "pagePath": "pages/history/history",
-        "text": "历史"
+        "text": "历史",
+        "iconPath": "images/history.png",
+        "selectedIconPath": "images/history-active.png"
       }
     ]
   },
