@@ -27,7 +27,12 @@ Thumbs.db
 # 微信小程序
 miniprogram/.tea/
 miniprogram/project.private.config.json
+project.private.config.json
+project.config.json
 
 # 构建产物
 dist/
 build/
+
+# 临时commit信息文件
+commit-msg*.txt
