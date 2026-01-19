@@ -1,0 +1,52 @@
+<!--pages/gto-advice/gto-advice.wxml-->
+<view class="container">
+  <view class="card">
+    <view class="title">GTO策略建议</view>
+    
+    <view class="input-section">
+      <view class="input-group">
+        <text class="label">手牌</text>
+        <view class="hand-selector">
+          <!-- 手牌选择组件 -->
+          <text>选择手牌功能待实现</text>
+        </view>
+      </view>
+
+      <view class="input-group">
+        <text class="label">位置</text>
+        <picker mode="selector" range="{{positions}}" value="{{positions.indexOf(position)}}" bindchange="setPosition">
+          <view class="picker">{{position}}</view>
+        </picker>
+      </view>
+
+      <view class="input-group">
+        <text class="label">筹码深度 (BB)</text>
+        <input class="input" type="number" value="{{stackDepth}}" bindinput="setStackDepth" />
+      </view>
+
+      <button class="btn btn-primary" bindtap="getAdvice" loading="{{isLoading}}">获取建议</button>
+    </view>
+  </view>
+
+  <view wx:if="{{advice}}" class="card advice-result">
+    <view class="title">GTO建议</view>
+    <view class="advice-content">
+      <view class="advice-item">
+        <text class="advice-label">推荐动作:</text>
+        <text class="advice-value">{{advice.recommendedAction}}</text>
+      </view>
+      <view class="advice-item">
+        <text class="advice-label">期望价值:</text>
+        <text class="advice-value">{{advice.ev}}</text>
+      </view>
+      <view wx:if="{{advice.frequencies}}" class="advice-item">
+        <text class="advice-label">动作频率:</text>
+        <view class="frequencies">
+          <text>弃牌: {{advice.frequencies.fold}}%</text>
+          <text>跟注: {{advice.frequencies.call}}%</text>
+          <text>加注: {{advice.frequencies.raise}}%</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

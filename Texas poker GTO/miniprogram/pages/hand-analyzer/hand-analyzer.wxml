@@ -1,0 +1,53 @@
+<!--pages/hand-analyzer/hand-analyzer.wxml-->
+<view class="container">
+  <view class="card">
+    <view class="title">手牌分析器</view>
+    <view class="input-section">
+      <view class="input-group">
+        <text class="label">你的手牌</text>
+        <view class="hand-display">
+          <text wx:if="{{userHand.length === 0}}">请选择手牌</text>
+          <view wx:else class="cards">
+            <view class="card-item" wx:for="{{userHand}}" wx:key="index">
+              <text class="card-suit">{{item.suit}}</text>
+              <text class="card-rank">{{item.rank}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="input-group">
+        <text class="label">公共牌</text>
+        <view class="hand-display">
+          <text wx:if="{{communityCards.length === 0}}">请选择公共牌（可选）</text>
+          <view wx:else class="cards">
+            <view class="card-item" wx:for="{{communityCards}}" wx:key="index">
+              <text class="card-suit">{{item.suit}}</text>
+              <text class="card-rank">{{item.rank}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <button class="btn btn-primary" bindtap="analyze">分析</button>
+    </view>
+  </view>
+
+  <view wx:if="{{analysis}}" class="card analysis-result">
+    <view class="title">分析结果</view>
+    <view class="result-content">
+      <view class="result-item">
+        <text class="result-label">手牌类型:</text>
+        <text class="result-value">{{analysis.handType}}</text>
+      </view>
+      <view class="result-item">
+        <text class="result-label">牌力强度:</text>
+        <text class="result-value">{{analysis.strength}}</text>
+      </view>
+      <view wx:if="{{analysis.winRate}}" class="result-item">
+        <text class="result-label">胜率:</text>
+        <text class="result-value">{{analysis.winRate}}%</text>
+      </view>
+    </view>
+  </view>
+</view>

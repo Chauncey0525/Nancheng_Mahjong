@@ -1,0 +1,22 @@
+<!--pages/range-analyzer/range-analyzer.wxml-->
+<view class="container">
+  <view class="card">
+    <view class="title">范围分析器</view>
+    <view class="input-section">
+      <view class="input-group">
+        <text class="label">位置</text>
+        <picker mode="selector" range="{{positions}}" value="{{positions.indexOf(position)}}" bindchange="setPosition">
+          <view class="picker">{{position}}</view>
+        </picker>
+      </view>
+    </view>
+  </view>
+
+  <view class="card range-display">
+    <view class="title">{{position}} 位置起手牌范围</view>
+    <view class="range-grid">
+      <!-- 手牌范围可视化组件 -->
+      <text>范围可视化组件待实现</text>
+    </view>
+  </view>
+</view>

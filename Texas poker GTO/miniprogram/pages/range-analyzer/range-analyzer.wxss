@@ -1,0 +1,31 @@
+/* pages/range-analyzer/range-analyzer.wxss */
+.input-section {
+  margin-top: 30rpx;
+}
+
+.input-group {
+  margin-bottom: 30rpx;
+}
+
+.label {
+  display: block;
+  font-size: 28rpx;
+  color: #a0a0a0;
+  margin-bottom: 10rpx;
+}
+
+.range-display {
+  margin-top: 30rpx;
+}
+
+.range-grid {
+  margin-top: 30rpx;
+  min-height: 400rpx;
+  background-color: #16213e;
+  border-radius: 10rpx;
+  padding: 20rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #a0a0a0;
+}
