@@ -1,7 +1,0 @@
-添加Git中文提交辅助工具和完整指南
-
-- 创建git-commit-chinese.sh：Git Bash提交脚本，确保中文正确
-- 创建commit-chinese.bat：Windows批处理提交脚本
-- 创建COMMIT_GUIDE.md：提交中文commit的快速指南
-- 创建HOW_TO_COMMIT_CHINESE.md：完整的中文提交指南和修复方法
-- 提供多种提交方法，确保以后所有commit都是正确的中文
