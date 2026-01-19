@@ -28,8 +28,16 @@ Page({
     const index = e.currentTarget.dataset.index;
     const game = this.data.gameHistory[index];
     
+    if (!game || !game.id) {
+      wx.showToast({
+        title: '记录数据错误',
+        icon: 'none'
+      });
+      return;
+    }
+    
     wx.navigateTo({
-      url: `/pages/replay/detail?gameId=${game.id}`
+      url: `/pages/replay/detail/detail?gameId=${game.id}`
     });
   },
 

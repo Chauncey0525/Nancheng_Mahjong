@@ -3,6 +3,17 @@
   <view wx:if="{{!gameState}}" class="game-setup">
     <view class="card">
       <view class="title">游戏设置</view>
+      
+      <!-- 预设配置 -->
+      <view class="preset-section">
+        <view class="preset-title">快速开始</view>
+        <view class="preset-buttons">
+          <button class="preset-btn" data-preset="quick" bindtap="usePreset">快速局</button>
+          <button class="preset-btn" data-preset="standard" bindtap="usePreset">标准局</button>
+          <button class="preset-btn" data-preset="tournament" bindtap="usePreset">锦标赛</button>
+        </view>
+      </view>
+      
       <view class="setting-item">
         <text>玩家数量</text>
         <picker mode="selector" range="{{[2,3,4,5,6]}}" value="{{gameSettings.playerCount - 2}}" bindchange="onPlayerCountChange">
@@ -21,6 +32,13 @@
         <text>大盲注</text>
         <input class="input" type="number" value="{{gameSettings.bigBlind}}" bindinput="onBigBlindChange" />
       </view>
+      <view class="hint-text">（至少为小盲注的2倍）</view>
+      
+      <view class="settings-summary">
+        <text>盲注级别: {{gameSettings.smallBlind}}/{{gameSettings.bigBlind}}</text>
+        <text>起始筹码深度: {{chipDepth}} BB</text>
+      </view>
+      
       <button class="btn btn-primary" bindtap="startNewGame">开始游戏</button>
     </view>
   </view>
@@ -75,11 +93,19 @@
     <view wx:if="{{gameState.players[gameState.currentPlayerIndex].isHuman && !gameState.players[gameState.currentPlayerIndex].folded}}" class="action-buttons card">
       <button class="btn btn-primary" bindtap="getGTOAdvice">获取GTO建议</button>
       <button class="btn btn-secondary" bindtap="onCheck" wx:if="{{gameState.currentBet === 0}}">过牌</button>
-      <button class="btn btn-secondary" bindtap="onCall" wx:if="{{gameState.currentBet > 0}}">跟注</button>
-      <button class="btn btn-secondary" bindtap="onBet">下注</button>
+      <button class="btn btn-secondary" bindtap="onCall" wx:if="{{gameState.currentBet > 0}}">跟注 {{gameState.currentBet - gameState.players[gameState.currentPlayerIndex].currentBet > 0 ? gameState.currentBet - gameState.players[gameState.currentPlayerIndex].currentBet : ''}}</button>
+      <button class="btn btn-secondary" bindtap="showBetInput">下注</button>
       <button class="btn btn-danger" bindtap="onFold">弃牌</button>
       <button class="btn btn-danger" bindtap="onAllIn">全押</button>
     </view>
+
+    <!-- 下注输入组件 -->
+    <bet-input
+      currentBet="{{gameState.currentBet}}"
+      playerChips="{{gameState.players[gameState.currentPlayerIndex].chips}}"
+      minBet="{{gameState.currentBet}}"
+      bind:confirm="onBetConfirm"
+    />
 
     <!-- GTO建议弹窗 -->
     <view wx:if="{{showGTOAdvice}}" class="gto-modal" bindtap="closeGTOAdvice">

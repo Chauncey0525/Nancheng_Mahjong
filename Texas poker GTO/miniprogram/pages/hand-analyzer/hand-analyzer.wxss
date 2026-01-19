@@ -14,12 +14,11 @@
   margin-bottom: 10rpx;
 }
 
-.hand-display {
+.hint {
+  color: #7A7E83;
+  font-size: 28rpx;
   padding: 20rpx;
-  background-color: #16213e;
-  border-radius: 10rpx;
-  border: 2rpx solid #533483;
-  min-height: 100rpx;
+  text-align: center;
 }
 
 .cards {

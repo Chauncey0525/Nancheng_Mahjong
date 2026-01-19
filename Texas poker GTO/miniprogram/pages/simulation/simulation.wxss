@@ -3,17 +3,76 @@
   padding: 20rpx;
 }
 
+.preset-section {
+  margin-bottom: 30rpx;
+  padding-bottom: 30rpx;
+  border-bottom: 2rpx solid #533483;
+}
+
+.preset-title {
+  font-size: 28rpx;
+  color: #a0a0a0;
+  margin-bottom: 20rpx;
+}
+
+.preset-buttons {
+  display: flex;
+  gap: 15rpx;
+}
+
+.preset-btn {
+  flex: 1;
+  padding: 15rpx;
+  background-color: #16213e;
+  border: 2rpx solid #533483;
+  border-radius: 10rpx;
+  color: #ffffff;
+  font-size: 26rpx;
+}
+
+.preset-btn:active {
+  background-color: #0f3460;
+}
+
 .setting-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 30rpx 0;
   border-bottom: 1rpx solid #533483;
+  flex-wrap: wrap;
 }
 
 .setting-item text {
   font-size: 32rpx;
   color: #ffffff;
+}
+
+.setting-item .hint {
+  font-size: 24rpx;
+  color: #7A7E83;
+  width: 100%;
+  margin-top: 10rpx;
+}
+
+.hint-text {
+  font-size: 24rpx;
+  color: #7A7E83;
+  margin-top: -20rpx;
+  margin-bottom: 20rpx;
+  padding-left: 20rpx;
+}
+
+.settings-summary {
+  margin: 30rpx 0;
+  padding: 20rpx;
+  background-color: #16213e;
+  border-radius: 10rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  font-size: 26rpx;
+  color: #a0a0a0;
 }
 
 .picker {

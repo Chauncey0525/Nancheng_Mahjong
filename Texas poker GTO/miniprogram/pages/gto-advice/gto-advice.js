@@ -15,7 +15,9 @@ Page({
     stackDepth: 100,
     advice: null,
     isLoading: false,
-    positions: ['UTG', 'UTG+1', 'MP', 'MP+1', 'CO', 'BTN', 'SB', 'BB']
+    positions: ['UTG', 'UTG+1', 'MP', 'MP+1', 'CO', 'BTN', 'SB', 'BB'],
+    gamePhases: ['preflop', 'flop', 'turn', 'river'],
+    gamePhaseIndex: 0
   },
 
   onLoad() {
@@ -27,9 +29,12 @@ Page({
     // 可以从输入或选择中获取
   },
 
-  // 设置手牌
-  setHand(e) {
-    // 手牌选择逻辑
+  // 手牌变化
+  onHandChange(e) {
+    const hand = e.detail.hand;
+    this.setData({
+      userHand: hand
+    });
   },
 
   // 设置位置
@@ -44,6 +49,16 @@ Page({
   setStackDepth(e) {
     this.setData({
       stackDepth: parseInt(e.detail.value) || 100
+    });
+  },
+
+  // 设置游戏阶段
+  setGamePhase(e) {
+    const index = parseInt(e.detail.value);
+    const phase = this.data.gamePhases[index];
+    this.setData({
+      gamePhaseIndex: index,
+      'gameState.gamePhase': phase
     });
   },
 

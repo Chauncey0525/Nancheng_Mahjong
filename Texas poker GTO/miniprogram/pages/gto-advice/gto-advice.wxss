@@ -55,3 +55,12 @@
   margin-top: 10rpx;
   font-size: 28rpx;
 }
+
+.community-cards-hint {
+  padding: 20rpx;
+  background-color: #16213e;
+  border-radius: 10rpx;
+  color: #7A7E83;
+  font-size: 24rpx;
+  text-align: center;
+}

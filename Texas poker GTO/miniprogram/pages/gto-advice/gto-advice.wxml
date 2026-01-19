@@ -6,10 +6,10 @@
     <view class="input-section">
       <view class="input-group">
         <text class="label">手牌</text>
-        <view class="hand-selector">
-          <!-- 手牌选择组件 -->
-          <text>选择手牌功能待实现</text>
-        </view>
+        <hand-selector 
+          selectedHand="{{userHand}}"
+          bind:change="onHandChange"
+        />
       </view>
 
       <view class="input-group">
@@ -21,7 +21,21 @@
 
       <view class="input-group">
         <text class="label">筹码深度 (BB)</text>
-        <input class="input" type="number" value="{{stackDepth}}" bindinput="setStackDepth" />
+        <input class="input" type="number" value="{{stackDepth}}" bindinput="setStackDepth" placeholder="例如: 100" />
+      </view>
+
+      <view class="input-group">
+        <text class="label">游戏阶段</text>
+        <picker mode="selector" range="{{['preflop', 'flop', 'turn', 'river']}}" value="{{gamePhaseIndex}}" bindchange="setGamePhase">
+          <view class="picker">{{gameState.gamePhase}}</view>
+        </picker>
+      </view>
+
+      <view class="input-group" wx:if="{{gameState.gamePhase !== 'preflop'}}">
+        <text class="label">公共牌（可选）</text>
+        <view class="community-cards-hint">
+          <text>公共牌选择功能待完善</text>
+        </view>
       </view>
 
       <button class="btn btn-primary" bindtap="getAdvice" loading="{{isLoading}}">获取建议</button>

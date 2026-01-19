@@ -25,7 +25,8 @@
       <view class="item-content">
         <text>玩家数: {{item.gameState.players.length}}</text>
         <text>底池: {{item.gameState.pot}}</text>
-        <text>结果: {{item.finalResult.message || '未完成'}}</text>
+        <text>阶段: {{item.gameState.gamePhase || 'preflop'}}</text>
+        <text>结果: {{item.finalResult ? item.finalResult.message : '未完成'}}</text>
       </view>
       <view class="item-actions">
         <button class="btn btn-primary" size="mini" data-index="{{index}}" bindtap="viewReplay" catchtap="stopPropagation">查看</button>

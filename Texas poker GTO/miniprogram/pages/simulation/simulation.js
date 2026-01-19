@@ -13,17 +13,30 @@ Page({
       initialChips: 1000,
       smallBlind: 10,
       bigBlind: 20
-    }
+    },
+    chipDepth: 0
   },
 
   onLoad(options) {
     // 加载游戏设置
     const savedSettings = wx.getStorageSync('gameSettings');
     if (savedSettings) {
+      const settings = { ...this.data.gameSettings, ...savedSettings };
       this.setData({
-        gameSettings: { ...this.data.gameSettings, ...savedSettings }
+        gameSettings: settings,
+        chipDepth: Math.floor(settings.initialChips / settings.bigBlind)
       });
+    } else {
+      this.updateChipDepth();
     }
+  },
+
+  // 更新筹码深度
+  updateChipDepth() {
+    const depth = Math.floor(this.data.gameSettings.initialChips / this.data.gameSettings.bigBlind);
+    this.setData({
+      chipDepth: depth
+    });
   },
 
   // 开始新游戏
@@ -115,57 +128,104 @@ Page({
   // 设置玩家数量
   onPlayerCountChange(e) {
     const count = parseInt(e.detail.value) + 2;
+    const settings = { ...this.data.gameSettings, playerCount: count };
     this.setData({
-      'gameSettings.playerCount': count
+      gameSettings: settings
     });
-    wx.setStorageSync('gameSettings', this.data.gameSettings);
+    wx.setStorageSync('gameSettings', settings);
   },
 
   // 设置初始筹码
   onChipsChange(e) {
-    const chips = parseInt(e.detail.value) || 1000;
+    const chips = Math.max(100, parseInt(e.detail.value) || 1000);
+    const settings = { ...this.data.gameSettings, initialChips: chips };
     this.setData({
-      'gameSettings.initialChips': chips
+      gameSettings: settings
     });
-    wx.setStorageSync('gameSettings', this.data.gameSettings);
+    this.updateChipDepth();
+    wx.setStorageSync('gameSettings', settings);
   },
 
   // 设置小盲注
   onSmallBlindChange(e) {
-    const blind = parseInt(e.detail.value) || 10;
+    const blind = Math.max(1, parseInt(e.detail.value) || 10);
+    const settings = { ...this.data.gameSettings, smallBlind: blind };
+    // 自动调整大盲注为小盲注的2倍
+    if (settings.bigBlind < blind * 2) {
+      settings.bigBlind = blind * 2;
+    }
     this.setData({
-      'gameSettings.smallBlind': blind
+      gameSettings: settings
     });
-    wx.setStorageSync('gameSettings', this.data.gameSettings);
+    this.updateChipDepth();
+    wx.setStorageSync('gameSettings', settings);
   },
 
   // 设置大盲注
   onBigBlindChange(e) {
-    const blind = parseInt(e.detail.value) || 20;
+    const blind = Math.max(this.data.gameSettings.smallBlind * 2, parseInt(e.detail.value) || 20);
+    const settings = { ...this.data.gameSettings, bigBlind: blind };
     this.setData({
-      'gameSettings.bigBlind': blind
+      gameSettings: settings
     });
-    wx.setStorageSync('gameSettings', this.data.gameSettings);
+    this.updateChipDepth();
+    wx.setStorageSync('gameSettings', settings);
   },
 
-  // 下注
-  onBet() {
-    wx.showModal({
-      title: '下注',
-      editable: true,
-      placeholderText: '请输入下注金额',
-      success: (res) => {
-        if (res.confirm && res.content) {
-          const amount = parseInt(res.content);
-          if (amount > 0) {
-            this.handlePlayerAction({
-              type: 'bet',
-              amount: amount
-            });
-          }
-        }
-      }
+  // 使用预设配置
+  usePreset(e) {
+    const preset = e.currentTarget.dataset.preset;
+    let settings = { ...this.data.gameSettings };
+    
+    switch (preset) {
+      case 'quick':
+        settings = {
+          playerCount: 2,
+          initialChips: 500,
+          smallBlind: 5,
+          bigBlind: 10
+        };
+        break;
+      case 'standard':
+        settings = {
+          playerCount: 6,
+          initialChips: 1000,
+          smallBlind: 10,
+          bigBlind: 20
+        };
+        break;
+      case 'tournament':
+        settings = {
+          playerCount: 9,
+          initialChips: 2000,
+          smallBlind: 25,
+          bigBlind: 50
+        };
+        break;
+    }
+    
+    this.setData({
+      gameSettings: settings,
+      chipDepth: Math.floor(settings.initialChips / settings.bigBlind)
     });
+    wx.setStorageSync('gameSettings', settings);
+  },
+
+  // 显示下注输入
+  showBetInput() {
+    // 通过组件显示，这里不需要额外操作
+    // 组件会通过事件触发
+  },
+
+  // 确认下注
+  onBetConfirm(e) {
+    const amount = e.detail.amount;
+    if (amount > 0) {
+      this.handlePlayerAction({
+        type: 'bet',
+        amount: amount
+      });
+    }
   },
 
   // 跟注
