@@ -1,4 +1,6 @@
 // pages/knowledge/knowledge.js
+const knowledgeData = require('../../utils/knowledge-data.js');
+
 Page({
   data: {
     categories: [
@@ -9,6 +11,7 @@ Page({
       { id: 'advanced', name: '高级技巧', icon: '🚀' }
     ],
     articles: [],
+    filteredArticles: [],
     selectedCategory: null,
     searchKeyword: ''
   },
@@ -19,47 +22,66 @@ Page({
 
   // 加载文章列表
   loadArticles() {
-    // 这里可以从后端API或本地存储加载
-    const articles = [
-      {
-        id: '1',
-        title: 'GTO基础理论',
-        category: 'basics',
-        summary: '了解博弈论最优策略的基本概念',
-        content: 'GTO（Game Theory Optimal）是博弈论最优策略...'
-      },
-      {
-        id: '2',
-        title: '翻牌前起手牌选择',
-        category: 'preflop',
-        summary: '学习不同位置的起手牌范围',
-        content: '翻牌前的决策是德州扑克中最重要的环节...'
-      }
-    ];
+    const articles = knowledgeData.articles.map(article => ({
+      id: article.id,
+      title: article.title,
+      category: article.category,
+      categoryName: article.categoryName,
+      summary: article.summary,
+      date: article.date
+    }));
     
-    this.setData({ articles });
+    this.setData({ 
+      articles,
+      filteredArticles: articles
+    });
   },
 
   // 选择分类
   selectCategory(e) {
     const category = e.currentTarget.dataset.category;
+    const newCategory = category === this.data.selectedCategory ? null : category;
     this.setData({
-      selectedCategory: category === this.data.selectedCategory ? null : category
+      selectedCategory: newCategory
     });
+    this.filterArticles();
   },
 
   // 搜索
   onSearch(e) {
+    const keyword = e.detail.value;
     this.setData({
-      searchKeyword: e.detail.value
+      searchKeyword: keyword
     });
+    this.filterArticles();
+  },
+
+  // 筛选文章
+  filterArticles() {
+    let filtered = [...this.data.articles];
+    
+    // 按分类筛选
+    if (this.data.selectedCategory) {
+      filtered = filtered.filter(article => article.category === this.data.selectedCategory);
+    }
+    
+    // 按关键词搜索
+    if (this.data.searchKeyword) {
+      const keyword = this.data.searchKeyword.toLowerCase();
+      filtered = filtered.filter(article => 
+        article.title.toLowerCase().includes(keyword) ||
+        article.summary.toLowerCase().includes(keyword)
+      );
+    }
+    
+    this.setData({ filteredArticles: filtered });
   },
 
   // 查看文章详情
   viewArticle(e) {
     const id = e.currentTarget.dataset.id;
     wx.navigateTo({
-      url: `/pages/knowledge/article?id=${id}`
+      url: `/pages/knowledge/article/article?id=${id}`
     });
   }
 });

@@ -26,14 +26,14 @@
   </view>
 
   <view class="articles-section">
-    <view class="title">文章列表</view>
-    <view wx:if="{{articles.length === 0}}" class="empty-state">
+    <view class="title">文章列表 ({{filteredArticles.length}})</view>
+    <view wx:if="{{filteredArticles.length === 0}}" class="empty-state">
       <text>暂无文章</text>
     </view>
     <view wx:else class="articles-list">
       <view 
         class="article-item card"
-        wx:for="{{articles}}"
+        wx:for="{{filteredArticles}}"
         wx:key="id"
         wx:for-item="article"
         data-id="{{article.id}}"
@@ -42,7 +42,8 @@
         <view class="article-title">{{article.title}}</view>
         <view class="article-summary">{{article.summary}}</view>
         <view class="article-meta">
-          <text class="article-category">{{article.category}}</text>
+          <text class="article-category">{{article.categoryName}}</text>
+          <text class="article-date">{{article.date}}</text>
         </view>
       </view>
     </view>

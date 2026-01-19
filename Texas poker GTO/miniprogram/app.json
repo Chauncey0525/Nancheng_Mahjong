@@ -6,6 +6,7 @@
     "pages/replay/detail/detail",
     "pages/gto-advice/gto-advice",
     "pages/knowledge/knowledge",
+    "pages/knowledge/article/article",
     "pages/hand-analyzer/hand-analyzer",
     "pages/range-analyzer/range-analyzer",
     "pages/profile/profile"
