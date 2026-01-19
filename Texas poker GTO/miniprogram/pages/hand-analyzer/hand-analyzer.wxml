@@ -37,19 +37,19 @@
       </view>
       <view class="result-item">
         <text class="result-label">牌力强度:</text>
-        <text class="result-value">{{(analysis.strength * 100).toFixed(0)}}%</text>
+        <text class="result-value">{{analysis.strengthPercent}}%</text>
       </view>
-      <view wx:if="{{analysis.winRate}}" class="result-item">
+      <view wx:if="{{analysis.winRatePercent}}" class="result-item">
         <text class="result-label">胜率估算:</text>
-        <text class="result-value">{{analysis.winRate}}%</text>
+        <text class="result-value">{{analysis.winRatePercent}}%</text>
       </view>
       <view class="result-item">
         <text class="result-label">评估:</text>
         <text class="result-value">{{analysis.message}}</text>
       </view>
-      <view wx:if="{{analysis.possibleHands && analysis.possibleHands.length > 0}}" class="result-item">
+      <view wx:if="{{analysis.possibleHandsText}}" class="result-item">
         <text class="result-label">可能的成牌:</text>
-        <text class="result-value">{{analysis.possibleHands.join(', ')}}</text>
+        <text class="result-value">{{analysis.possibleHandsText}}</text>
       </view>
     </view>
   </view>

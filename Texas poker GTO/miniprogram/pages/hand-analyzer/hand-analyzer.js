@@ -54,11 +54,19 @@ Page({
     // 如果只有手牌，计算翻牌前胜率
     if (this.data.communityCards.length === 0) {
       const analysis = handEvaluator.analyzeHand(this.data.userHand);
+      // 格式化数据用于显示
+      const strengthPercent = analysis.strength ? Math.round(analysis.strength * 100) : 0;
+      const possibleHandsText = analysis.possibleHands && analysis.possibleHands.length > 0 
+        ? analysis.possibleHands.join(', ') 
+        : '';
+      
       this.setData({
         analysis: {
           ...analysis,
           stage: 'preflop',
-          message: '翻牌前分析'
+          message: '翻牌前分析',
+          strengthPercent: strengthPercent,
+          possibleHandsText: possibleHandsText
         }
       });
       return;
@@ -72,15 +80,23 @@ Page({
     // 分析可能的成牌组合
     const possibleHands = this.analyzePossibleHands(allCards);
     
+    // 格式化数据用于显示
+    const strengthPercent = Math.round(strength * 100);
+    const winRatePercent = winRate ? Math.round(winRate) : null;
+    const possibleHandsText = possibleHands.length > 0 ? possibleHands.join(', ') : '';
+    
     this.setData({
       analysis: {
         handType: hand.name,
         handRank: hand.rank,
         highCard: hand.highCard,
         strength: strength,
+        strengthPercent: strengthPercent, // 格式化后的百分比
         winRate: winRate,
+        winRatePercent: winRatePercent, // 格式化后的胜率
         stage: this.getStage(),
         possibleHands: possibleHands,
+        possibleHandsText: possibleHandsText, // 格式化后的成牌文本
         message: this.getAnalysisMessage(hand, strength)
       }
     });
