@@ -25,33 +25,23 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "首页",
-        "iconPath": "images/home.png",
-        "selectedIconPath": "images/home-active.png"
+        "text": "首页"
       },
       {
         "pagePath": "pages/simulation/simulation",
-        "text": "模拟",
-        "iconPath": "images/simulation.png",
-        "selectedIconPath": "images/simulation-active.png"
+        "text": "模拟"
       },
       {
         "pagePath": "pages/replay/replay",
-        "text": "复盘",
-        "iconPath": "images/replay.png",
-        "selectedIconPath": "images/replay-active.png"
+        "text": "复盘"
       },
       {
         "pagePath": "pages/knowledge/knowledge",
-        "text": "知识库",
-        "iconPath": "images/knowledge.png",
-        "selectedIconPath": "images/knowledge-active.png"
+        "text": "知识库"
       },
       {
         "pagePath": "pages/profile/profile",
-        "text": "我的",
-        "iconPath": "images/profile.png",
-        "selectedIconPath": "images/profile-active.png"
+        "text": "我的"
       }
     ]
   },
